@@ -14,11 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ZeqTech Git Visualizer",
-  description: "A visual tool for exploring Git repositories, created by ZeqTech.",
+  title: "gitshitt — Learn and Practice Git without losing your shit",
+  description:
+    "An interactive visual playground for learning Git. Practice branching, merging, rebasing, and more in a safe sandbox — no repo will be harmed.",
   icons: {
     icon: "./icon.png",
-  }
+  },
 };
 
 export default function RootLayout({

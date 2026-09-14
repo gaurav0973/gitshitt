@@ -1,16 +1,18 @@
-# Git Visualizer
+# gitshitt
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-git--visualizer-16a34a?style=for-the-badge)](https://zeqtech.github.io/git-visualizer/)
+### Learn and Practice Git without losing your shit.
 
-Git Visualizer is an interactive Next.js app for demonstrating and exploring common Git workflows visually. It combines a terminal-style command runner with a live commit graph so you can step through branching, merging, rebasing, tagging, resetting, and related operations and immediately see how the repository state changes.
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-gitshitt-16a34a?style=for-the-badge)](https://gaurav0973.github.io/gitshitt/)
+
+gitshitt is an interactive Next.js app for learning and practicing Git workflows visually. It combines a terminal-style command runner with a live commit graph so you can step through branching, merging, rebasing, tagging, resetting, and related operations and immediately see how the repository state changes — without touching a real repo.
 
 Example deployment:
 
-https://zeqtech.github.io/git-visualizer/
+https://gaurav0973.github.io/gitshitt/
 
 ## Screenshot
 
-![Git Visualizer screenshot](public/Example.PNG)
+![gitshitt screenshot](public/Example.PNG)
 
 Interactive terminal and live commit graph in the presentation preset.
 
@@ -87,6 +89,7 @@ npm run format
 
 ## Project Structure
 
+- `src/app/page.tsx`: marketing homepage with a call-to-action into the tool.
 - `src/app/git-visualizer/page.tsx`: main UI, demos, settings, and command execution flow.
 - `src/components/GitGraphComponent.tsx`: SVG graph renderer.
 - `src/components/TerminalComponent.tsx`: terminal UI and command history.
