@@ -1,0 +1,146 @@
+/**
+ * Soft Clay Design System — Tailwind CSS 4 tokens
+ * Merge into src/app/globals.css inside @theme inline { ... }
+ */
+
+:root {
+  /* Core surfaces */
+  --clay-bg: #faf7f2;
+  --clay-bg-alt: #fdf6f0;
+  --clay-sidebar: #c8d9d2;
+  --clay-sidebar-active: #dde8e3;
+  --clay-surface: #fffdf9;
+
+  /* Text */
+  --clay-text: #2d3436;
+  --clay-text-muted: #636e72;
+
+  /* Accents */
+  --clay-peach: #fad7c5;
+  --clay-coral: #e89a7b;
+  --clay-coral-dark: #d4836a;
+  --clay-yellow: #fcf1d1;
+  --clay-mint: #d4e7d7;
+  --clay-teal: #b8d8d8;
+  --clay-blue: #b8cbd0;
+
+  /* Semantic */
+  --clay-success: #7cb88a;
+  --clay-danger: #e17055;
+
+  /* Radius */
+  --radius-clay-sm: 16px;
+  --radius-clay-md: 24px;
+  --radius-clay-lg: 32px;
+  --radius-clay-xl: 40px;
+  --radius-clay-pill: 9999px;
+
+  /* Shadow color base (warm) */
+  --clay-shadow-color: 139 119 101;
+  --clay-shadow-dark: 45 52 54;
+}
+
+@theme inline {
+  /* Colors */
+  --color-clay-bg: var(--clay-bg);
+  --color-clay-bg-alt: var(--clay-bg-alt);
+  --color-clay-sidebar: var(--clay-sidebar);
+  --color-clay-sidebar-active: var(--clay-sidebar-active);
+  --color-clay-surface: var(--clay-surface);
+  --color-clay-text: var(--clay-text);
+  --color-clay-text-muted: var(--clay-text-muted);
+  --color-clay-peach: var(--clay-peach);
+  --color-clay-coral: var(--clay-coral);
+  --color-clay-coral-dark: var(--clay-coral-dark);
+  --color-clay-yellow: var(--clay-yellow);
+  --color-clay-mint: var(--clay-mint);
+  --color-clay-teal: var(--clay-teal);
+  --color-clay-blue: var(--clay-blue);
+  --color-clay-success: var(--clay-success);
+  --color-clay-danger: var(--clay-danger);
+
+  /* Radius */
+  --radius-clay-sm: var(--radius-clay-sm);
+  --radius-clay-md: var(--radius-clay-md);
+  --radius-clay-lg: var(--radius-clay-lg);
+  --radius-clay-xl: var(--radius-clay-xl);
+  --radius-clay-pill: var(--radius-clay-pill);
+
+  /* Shadows */
+  --shadow-clay-raised:
+    0 4px 0 rgb(var(--clay-shadow-dark) / 0.04),
+    0 12px 32px rgb(var(--clay-shadow-color) / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.6);
+
+  --shadow-clay-raised-hover:
+    0 6px 0 rgb(var(--clay-shadow-dark) / 0.04),
+    0 16px 40px rgb(var(--clay-shadow-color) / 0.16),
+    inset 0 1px 0 rgb(255 255 255 / 0.65);
+
+  --shadow-clay-button:
+    0 4px 0 rgb(180 100 70 / 0.35),
+    0 8px 20px rgb(var(--clay-shadow-color) / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.35);
+
+  --shadow-clay-button-active:
+    0 2px 0 rgb(180 100 70 / 0.35),
+    0 4px 12px rgb(var(--clay-shadow-color) / 0.14),
+    inset 0 1px 0 rgb(255 255 255 / 0.25);
+
+  --shadow-clay-inset:
+    inset 0 2px 6px rgb(var(--clay-shadow-dark) / 0.08),
+    inset 0 -1px 0 rgb(255 255 255 / 0.5);
+
+  --shadow-clay-icon-well:
+    inset 0 3px 8px rgb(var(--clay-shadow-dark) / 0.1),
+    0 2px 4px rgb(var(--clay-shadow-color) / 0.06);
+}
+
+/* Optional component-layer helpers (use sparingly) */
+@layer components {
+  .clay-card {
+    @apply rounded-clay-lg bg-clay-surface text-clay-text shadow-clay-raised;
+  }
+
+  .clay-card-interactive {
+    @apply clay-card transition-[transform,box-shadow] duration-150 ease-out;
+  }
+
+  @media (hover: hover) {
+    .clay-card-interactive:hover {
+      @apply -translate-y-0.5 shadow-clay-raised-hover;
+    }
+  }
+
+  .clay-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-clay-pill bg-clay-coral px-6 py-3 font-semibold text-white shadow-clay-button transition-[transform,box-shadow] duration-150 ease-out;
+  }
+
+  .clay-btn-primary:active {
+    @apply translate-y-0.5 shadow-clay-button-active;
+  }
+
+  .clay-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-clay-pill bg-clay-teal px-6 py-3 font-semibold text-clay-text shadow-clay-raised transition-[transform,box-shadow] duration-150 ease-out;
+  }
+
+  .clay-input {
+    @apply w-full rounded-clay-pill bg-clay-bg-alt px-5 py-3 text-clay-text shadow-clay-inset outline-none placeholder:text-clay-text-muted focus:ring-2 focus:ring-clay-coral/40;
+  }
+
+  .clay-sidebar {
+    @apply rounded-r-clay-xl bg-clay-sidebar shadow-clay-raised;
+  }
+
+  .clay-nav-active {
+    @apply rounded-clay-pill bg-clay-sidebar-active shadow-clay-raised;
+  }
+
+  .clay-stat-tile {
+    @apply flex flex-col items-center gap-3 rounded-clay-lg p-5 shadow-clay-raised;
+  }
+
+  .clay-icon-well {
+    @apply flex size-12 items-center justify-center rounded-full shadow-clay-icon-well;
+  }
+}
