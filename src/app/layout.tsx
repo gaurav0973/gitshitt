@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { ClerkProvider } from '@clerk/nextjs'
 import "./globals.css";
 
 const outfit = Outfit({
@@ -42,7 +43,9 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} bg-background text-foreground antialiased`}
       >
+        <ClerkProvider>
         {children}
+        </ClerkProvider>
       </body>
     </html>
   );

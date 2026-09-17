@@ -196,7 +196,7 @@ export default function HomePage() {
             >
               GitHub
             </a>
-            <Link href="/login" className="font-semibold hover:text-accent">
+            <Link href="/sign-in" className="font-semibold hover:text-accent">
               Log in
             </Link>
           </div>

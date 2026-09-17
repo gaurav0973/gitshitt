@@ -22,7 +22,7 @@ export function HomeNav() {
       </nav>
       <div className="col-start-3 flex items-center justify-end gap-2 sm:gap-3">
         <SecondaryLink
-          href="/login"
+          href="/sign-in"
           showArrow={false}
           className="hidden px-4 py-2 text-sm sm:inline-flex"
         >

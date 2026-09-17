@@ -72,7 +72,7 @@ export function GroupedSelect({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-2 max-h-72 w-full min-w-[200px] overflow-y-auto rounded-2xl border-2 border-foreground bg-card p-1.5 text-foreground shadow-pop-lg">
+        <div className="absolute z-50 mt-2 max-h-72 w-full min-w-50 overflow-y-auto rounded-2xl border-2 border-foreground bg-card p-1.5 text-foreground shadow-pop-lg">
           {options.map((option, index) => {
             if (option.isSeparator) {
               return (
