@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
+import { PrimaryButton } from "@/components/playful/buttons";
 
 export interface TerminalOutput {
   type: "command" | "success" | "error" | "info";
@@ -16,6 +17,93 @@ export interface TerminalProps {
   refocusOnEnter?: boolean;
 }
 
+const TERMINAL_COLORS = {
+  command: "#34D399",
+  error: "#F87171",
+  info: "#FBBF24",
+  branch: "#A78BFA",
+  hash: "#FBBF24",
+  message: "#F472B6",
+  muted: "#CBD5E1",
+  body: "#E2E8F0",
+  merge: "#67E8F9",
+} as const;
+
+function colorizeOutputLine(
+  text: string,
+  type: TerminalOutput["type"],
+): React.ReactNode {
+  switch (type) {
+    case "command":
+      return <span style={{ color: TERMINAL_COLORS.command }}>{text}</span>;
+    case "error":
+      return <span style={{ color: TERMINAL_COLORS.error }}>{text}</span>;
+    case "info":
+      return <span style={{ color: TERMINAL_COLORS.info }}>{text}</span>;
+    case "success":
+      break;
+    default: {
+      const _exhaustive: never = type;
+      return _exhaustive;
+    }
+  }
+
+  const commitMatch = text.match(/^\[([^\s\]]+)\s+([A-Fa-f0-9]+)\]\s+(.*)$/);
+  if (commitMatch) {
+    const [, branch, hash, message] = commitMatch;
+    return (
+      <>
+        <span style={{ color: TERMINAL_COLORS.muted }}>[</span>
+        <span style={{ color: TERMINAL_COLORS.branch }}>{branch}</span>
+        <span style={{ color: TERMINAL_COLORS.muted }}> </span>
+        <span style={{ color: TERMINAL_COLORS.hash }}>{hash}</span>
+        <span style={{ color: TERMINAL_COLORS.muted }}>] </span>
+        <span style={{ color: TERMINAL_COLORS.message }}>{message}</span>
+      </>
+    );
+  }
+
+  if (text.startsWith("Merge ") || text.startsWith("Merged ")) {
+    return <span style={{ color: TERMINAL_COLORS.merge }}>{highlightQuoted(text)}</span>;
+  }
+
+  if (text.startsWith("Fast-forward merged ")) {
+    return (
+      <span style={{ color: TERMINAL_COLORS.merge }}>
+        {highlightQuoted(text)}
+      </span>
+    );
+  }
+
+  return <span style={{ color: TERMINAL_COLORS.body }}>{highlightQuoted(text)}</span>;
+}
+
+function highlightQuoted(text: string): React.ReactNode {
+  const parts = text.split(/('[^']*')/g);
+  if (parts.length === 1) return text;
+
+  return parts.map((part, index) =>
+    part.startsWith("'") && part.endsWith("'") ? (
+      <span key={`${part}-${index}`} style={{ color: TERMINAL_COLORS.branch }}>
+        {part}
+      </span>
+    ) : (
+      <span key={`${part}-${index}`}>{part}</span>
+    ),
+  );
+}
+
+function renderOutputText(text: string, type: TerminalOutput["type"]) {
+  const lines = text.split("\n");
+  if (lines.length === 1) {
+    return colorizeOutputLine(text, type);
+  }
+
+  return lines.map((line, index) => (
+    <div key={`${line}-${index}`}>{colorizeOutputLine(line, type)}</div>
+  ));
+}
+
 export const TerminalComponent = React.forwardRef<
   TerminalHandle,
   TerminalProps
@@ -23,8 +111,8 @@ export const TerminalComponent = React.forwardRef<
   (
     {
       onCommand,
-      placeholder = "Enter a command...",
-      helpText = "Type 'help' for available commands",
+      placeholder = "git status",
+      helpText = "Type real git commands in this sandbox.",
       fontSize = 14,
       refocusOnEnter = true,
     },
@@ -38,12 +126,10 @@ export const TerminalComponent = React.forwardRef<
     const historyEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Auto-scroll to bottom when new output appears
     useEffect(() => {
       historyEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [history]);
 
-    // Expose methods via ref
     React.useImperativeHandle(ref, () => ({
       clearHistory: () => setHistory([]),
       addOutput: (output: TerminalOutput) => {
@@ -53,7 +139,7 @@ export const TerminalComponent = React.forwardRef<
       setInput: (value: string) => setCurrentCommand(value),
       executeCurrentInput: () => {
         if (currentCommand.trim() && !isLoading) {
-          handleCommandSubmit(new Event("submit") as any);
+          handleCommandSubmit(new Event("submit") as unknown as React.FormEvent);
         }
       },
     }));
@@ -64,22 +150,15 @@ export const TerminalComponent = React.forwardRef<
 
       const command = currentCommand.trim();
 
-      // Add command to history display
       setHistory((prev) => [
         ...prev,
-        {
-          type: "command",
-          text: `$ ${command}`,
-          timestamp: Date.now(),
-        },
+        { type: "command", text: `$ ${command}`, timestamp: Date.now() },
       ]);
 
-      // Add to command history for navigation
       setCommandHistory((prev) => [...prev, command]);
       setHistoryIndex(-1);
       setCurrentCommand("");
 
-      // Execute command
       setIsLoading(true);
       try {
         const output = await onCommand(command);
@@ -95,34 +174,16 @@ export const TerminalComponent = React.forwardRef<
         ]);
       } finally {
         setIsLoading(false);
-        if ( refocusOnEnter ) {
-          requestAnimationFrame( () => inputRef.current?.focus() );
+        if (refocusOnEnter) {
+          requestAnimationFrame(() => inputRef.current?.focus());
         }
       }
     };
 
-    const implementedGitFeatures = [
-      "git add <path>",
-      "git commit -m 'msg'",
-      "git branch, git branch <name>, git branch -d|-D <name>",
-      "git checkout <branch>, git checkout -b <branch>",
-      "git switch <branch>, git switch -c <branch>",
-      "git merge <branch>, git merge --squash <branch>",
-      "git rebase <branch>",
-      "git squash <branch>",
-      "git tag <name>",
-      "git log, git log --oneline",
-      "git reset --hard|--soft HEAD~<n>",
-      "git status",
-      "git pull <remote> <branch>",
-    ];
-
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      // Arrow up: navigate to previous command
       if (e.key === "ArrowUp") {
         e.preventDefault();
         if (commandHistory.length === 0) return;
-
         const newIndex =
           historyIndex === -1 ? commandHistory.length - 1 : historyIndex - 1;
         if (newIndex >= 0) {
@@ -131,11 +192,9 @@ export const TerminalComponent = React.forwardRef<
         }
       }
 
-      // Arrow down: navigate to next command
       if (e.key === "ArrowDown") {
         e.preventDefault();
         if (historyIndex === -1) return;
-
         const newIndex = historyIndex + 1;
         if (newIndex >= commandHistory.length) {
           setHistoryIndex(-1);
@@ -146,66 +205,41 @@ export const TerminalComponent = React.forwardRef<
         }
       }
 
-      // Tab: complete command (optional enhancement)
       if (e.key === "Tab") {
         e.preventDefault();
-        // Could add autocomplete here
-      }
-    };
-
-    const getOutputClasses = (type: TerminalOutput["type"]): string => {
-      const baseClasses = "font-mono";
-      switch (type) {
-        case "command":
-          return `${baseClasses} text-green-400`;
-        case "success":
-          return `${baseClasses} text-blue-400`;
-        case "error":
-          return `${baseClasses} text-red-400`;
-        case "info":
-          return `${baseClasses} text-slate-400`;
-        default:
-          return baseClasses;
       }
     };
 
     return (
-      <div className="flex flex-col h-full bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-        {/* Header */}
-        <div className="border-b border-slate-700 px-4 py-3 bg-slate-900">
-          <p className="text-lg font-medium text-slate-300">Terminal</p>
+      <div className="terminal-sticker">
+        <div className="terminal-sticker-header">
+          <span className="size-2.5 rounded-full bg-[#EF4444]" />
+          <span className="size-2.5 rounded-full bg-[#FBBF24]" />
+          <span className="size-2.5 rounded-full bg-[#34D399]" />
         </div>
 
-        {/* Output Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-1">
-          {history.length === 0 ? (
-            <div className="text-slate-500 italic" style={{ fontSize }}>
-              {helpText}
-            </div>
-          ) : (
-            history.map((output, idx) => (
+        <div className="terminal-sticker-body flex flex-col text-slate-200">
+          <div className="flex-1 space-y-1.5 overflow-y-auto px-4 py-3">
+            {helpText && history.length === 0 && (
+              <p className="text-sm leading-relaxed text-slate-300">{helpText}</p>
+            )}
+            {history.map((item, index) => (
               <div
-                // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                key={idx}
-                className={`${ getOutputClasses( output.type ) } whitespace-pre-wrap`}
+                key={`${item.timestamp}-${index}`}
+                className="font-mono leading-relaxed"
                 style={{ fontSize }}
               >
-                {output.text}
+                {renderOutputText(item.text, item.type)}
               </div>
-            ))
-          )}
-          <div ref={historyEndRef} />
-        </div>
+            ))}
+            <div ref={historyEndRef} />
+          </div>
 
-        {/* Input Area */}
-        <div className="border-t border-slate-700 px-4 py-3 bg-slate-900">
           <form
             onSubmit={handleCommandSubmit}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-t border-white/10 px-3 py-2.5"
           >
-            <span className="text-green-400 font-mono" style={{ fontSize }}>
-              $
-            </span>
+            <span className="font-mono text-sm font-bold text-[#34D399]">$</span>
             <input
               ref={inputRef}
               type="text"
@@ -214,47 +248,19 @@ export const TerminalComponent = React.forwardRef<
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               disabled={isLoading}
-              className="flex-1 bg-slate-700 text-white px-3 py-2 rounded border border-slate-600 focus:border-blue-500 focus:outline-none font-mono disabled:opacity-50"
+              className="min-w-0 flex-1 rounded-xl border border-white/15 bg-[#172033] px-3 py-2 font-mono text-sm text-white placeholder:text-slate-400 outline-none focus:border-accent disabled:opacity-50"
               style={{ fontSize }}
-              // biome-ignore lint/a11y/noAutofocus: <explanation>
+              // biome-ignore lint/a11y/noAutofocus: terminal should focus on load
               autoFocus
             />
-            <div className="relative group">
-              <button
-                type="button"
-                aria-label="Implemented git features"
-                title="Implemented git features"
-                className="w-8 h-8 rounded border border-slate-600 bg-slate-700 text-slate-300 hover:text-white hover:border-slate-500 transition-colors font-semibold"
-                style={{ fontSize: Math.max( 12, fontSize - 1 ) }}
-              >
-                i
-              </button>
-              <div className="pointer-events-none absolute bottom-10 right-0 z-20 hidden group-hover:block w-104 rounded border border-slate-600 bg-slate-900/95 p-3 shadow-lg">
-                <p className="text-xs font-semibold text-slate-200 mb-2">
-                  Implemented git features
-                </p>
-                <ul className="text-xs text-slate-300 space-y-1 list-disc pl-4">
-                  {implementedGitFeatures.map( ( feature ) => (
-                    <li key={feature}>{feature}</li>
-                  ) )}
-                </ul>
-                <p className="mt-2 text-xs font-semibold text-slate-200 mb-2 italic">Note: These might not be perfect but I tried to get them to represent the actual git features as accurately as possible.</p>
-              </div>
-            </div>
-            <button
+            <PrimaryButton
               type="submit"
               disabled={isLoading || !currentCommand.trim()}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ fontSize }}
+              className="px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isLoading ? "..." : "Enter"}
-            </button>
+            </PrimaryButton>
           </form>
-
-          {/* Help text with keyboard hints */}
-          <p className="text-xs text-slate-500 mt-2">
-            Use ↑↓ arrows to navigate history
-          </p>
         </div>
       </div>
     );

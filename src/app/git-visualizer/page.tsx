@@ -1,8 +1,7 @@
 /** biome-ignore-all lint/a11y/useButtonType: <explanation> */
 "use client";
 
-import Link from "next/link";
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import {
   TerminalComponent,
   type TerminalHandle,
@@ -20,24 +19,51 @@ import {
   GroupedSelect,
   type GroupedSelectOption,
 } from "@/components/ui/grouped-select";
+import {
+  QUESTS,
+  type Quest,
+  getCompletedQuestIds,
+  saveCompletedQuestId,
+} from "@/lib/questSystem";
+import {
+  playPop,
+  playCommit,
+  playBranch,
+  playMerge,
+  playBoing,
+  playSuccess,
+} from "@/lib/audioFx";
+import { VisualizerHeader } from "@/components/playful/nav";
+import { ConceptIntuitionFab } from "@/components/playful/concept-drawer";
+import { PillTab, SecondaryButton } from "@/components/playful/buttons";
+import { RotateCcw, Sliders } from "lucide-react";
+import confetti from "canvas-confetti";
 
 const SETTINGS_STORAGE_KEY = "git-graph-settings";
 
 export default function GitVisualizerPage() {
   const [gitState, setGitState] = useState<GitState>(createEmptyGitState());
   const terminalRef = useRef<TerminalHandle>(null);
-  const [_, setSelectedCommitId] = useState<string | null>(null);
+  const [selectedCommitId, setSelectedCommitId] = useState<string | null>(null);
   const [demoMode, setDemoMode] = useState(false);
   const [demoIndex, setDemoIndex] = useState(0);
   const [isStacked, setIsStacked] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState<string>("merge");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [graphLayout, setGraphLayout] = useState<"presentation" | "compact">(
+    "presentation",
+  );
+  const [completedQuestIds, setCompletedQuestIds] = useState<string[]>([]);
+  const [newlyUnlockedQuest, setNewlyUnlockedQuest] = useState<Quest | null>(
+    null,
+  );
   const [exportStatus, setExportStatus] = useState<string | null>(null);
+
   const demoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const demoModeRef = useRef(demoMode);
   const spaceResolveRef = useRef<null | (() => void)>(null);
   const exportStatusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const presentationPresetSettings =
     SETTINGS_PRESETS.find((preset) => preset.key === "presentation")
       ?.settings ?? {};
@@ -91,6 +117,33 @@ export default function GitVisualizerPage() {
     return Math.min(1, demoIndex / Math.max(1, currentDemoCommands.length));
   }, [demoMode, demoIndex, currentDemoCommands.length]);
 
+  useEffect(() => {
+    setCompletedQuestIds(getCompletedQuestIds());
+  }, []);
+
+  const checkQuests = useCallback((newState: GitState) => {
+    const currentDone = getCompletedQuestIds();
+    for (const quest of QUESTS) {
+      if (!currentDone.includes(quest.id)) {
+        if (quest.checkCompleted(newState)) {
+          const updated = saveCompletedQuestId(quest.id);
+          setCompletedQuestIds(updated);
+          setNewlyUnlockedQuest(quest);
+          playSuccess();
+          confetti({
+            particleCount: 65,
+            spread: 70,
+            origin: { y: 0.4 },
+          });
+          setTimeout(() => {
+            setNewlyUnlockedQuest(null);
+          }, 4500);
+          break;
+        }
+      }
+    }
+  }, []);
+
   const sliderSettings = [
     {
       key: "INITIAL_DEMO_DELAY",
@@ -100,13 +153,12 @@ export default function GitVisualizerPage() {
       step: 100,
     },
     {
-      key: "TERMINAL_FONT_SIZE",
-      label: "Terminal font size",
-      min: 10,
-      max: 20,
-      step: 1,
+      key: "TYPING_DELAY",
+      label: "Typing delay",
+      min: 0,
+      max: 200,
+      step: 5,
     },
-    { key: "TYPING_DELAY", label: "Typing delay", min: 0, max: 300, step: 10 },
     {
       key: "COMMAND_DELAY",
       label: "Command delay",
@@ -118,114 +170,55 @@ export default function GitVisualizerPage() {
       key: "ACTION_ANIMATION_DELAY",
       label: "Action delay",
       min: 0,
-      max: 2000,
+      max: 3000,
       step: 50,
     },
     {
       key: "GRAPH_ANIMATION_DURATION",
-      label: "Graph animation",
-      min: 50,
+      label: "Graph anim duration",
+      min: 0,
       max: 2000,
       step: 50,
     },
-    { key: "COMMIT_RADIUS", label: "Commit radius", min: 6, max: 30, step: 1 },
-    { key: "EDGE_WIDTH", label: "Edge width", min: 1, max: 10, step: 1 },
+    {
+      key: "TERMINAL_FONT_SIZE",
+      label: "Terminal font size",
+      min: 10,
+      max: 24,
+      step: 1,
+    },
+    {
+      key: "COMMIT_RADIUS",
+      label: "Commit radius",
+      min: 8,
+      max: 28,
+      step: 1,
+    },
     {
       key: "NODE_SPACING_X",
       label: "Node spacing X",
-      min: 0,
-      max: 300,
-      step: 10,
+      min: 30,
+      max: 120,
+      step: 2,
     },
     {
       key: "NODE_SPACING_Y",
       label: "Node spacing Y",
-      min: 0,
-      max: 300,
-      step: 10,
-    },
-    { key: "OFFSET_LEFT", label: "Offset left", min: -150, max: 900, step: 5 },
-    { key: "OFFSET_TOP", label: "Offset top", min: -150, max: 300, step: 5 },
-    {
-      key: "FOCUS_NODE_TOP_OFFSET",
-      label: "Focus node top offset",
-      min: 0,
-      max: 200,
-      step: 5,
+      min: 30,
+      max: 120,
+      step: 2,
     },
     {
-      key: "FOCUS_NODE_BOTTOM_OFFSET",
-      label: "Focus node bottom offset",
-      min: 0,
-      max: 200,
-      step: 5,
-    },
-    {
-      key: "ARC_CURVATURE",
-      label: "Arc curvature",
-      min: 0,
-      max: 1,
-      step: 0.05,
-    },
-    {
-      key: "LONG_DISTANCE_THRESHOLD",
-      label: "Cubic threshold",
+      key: "EDGE_WIDTH",
+      label: "Edge width",
       min: 1,
-      max: 6,
-      step: 1,
-    },
-    {
-      key: "CUBIC_CURVE_CONTROL_POINT",
-      label: "Cubic control point",
-      min: 0,
-      max: 1.1,
-      step: 0.05,
-    },
-    {
-      key: "MESSAGE_OFFSET",
-      label: "Message offset",
-      min: 0,
-      max: 20,
-      step: 1,
-    },
-    {
-      key: "MESSAGE_WRAP_LENGTH",
-      label: "Message wrap length",
-      min: 5,
-      max: 50,
-      step: 1,
-    },
-    {
-      key: "COMMIT_HASH_FONT_SIZE",
-      label: "Commit hash size",
-      min: 8,
-      max: 18,
-      step: 1,
-    },
-    {
-      key: "COMMIT_MESSAGE_FONT_SIZE",
-      label: "Commit message size",
-      min: 8,
-      max: 18,
-      step: 1,
-    },
-    {
-      key: "BRANCH_LABEL_FONT_SIZE",
-      label: "Branch label size",
-      min: 8,
-      max: 18,
-      step: 1,
-    },
-    {
-      key: "TAG_LABEL_FONT_SIZE",
-      label: "Tag label size",
-      min: 8,
-      max: 18,
-      step: 1,
+      max: 8,
+      step: 0.5,
     },
   ] as const;
 
   const toggleSettings = () => {
+    playPop();
     setIsSettingsOpen((prev) => !prev);
   };
 
@@ -237,27 +230,26 @@ export default function GitVisualizerPage() {
   };
 
   const exportSettings = async () => {
+    playPop();
     const settingsText = JSON.stringify(settings, null, 4);
-    const payload = `${settingsText}`;
-
     try {
-      await navigator.clipboard.writeText(payload);
-      setExportStatus("Copied");
+      await navigator.clipboard.writeText(settingsText);
+      setExportStatus("Copied to clipboard!");
     } catch {
-      window.prompt("Copy settings preset:", payload);
+      window.prompt("Copy settings preset:", settingsText);
       setExportStatus("Prompted");
     }
 
     if (exportStatusTimeoutRef.current) {
       clearTimeout(exportStatusTimeoutRef.current);
     }
-
     exportStatusTimeoutRef.current = setTimeout(() => {
       setExportStatus(null);
     }, 2000);
   };
 
   const applyPreset = (presetKey: string) => {
+    playPop();
     const preset = SETTINGS_PRESETS.find((item) => item.key === presetKey);
     if (!preset) return;
     setSettings((prev) => ({ ...prev, ...preset.settings }));
@@ -288,10 +280,11 @@ export default function GitVisualizerPage() {
   ];
 
   const handleCommand = async (command: string): Promise<TerminalOutput> => {
-    // Parse the command
-    const parsed = parseGitCommand(command);
+    const trimmed = command.trim();
+    const parsed = parseGitCommand(trimmed);
 
     if ("error" in parsed && parsed.error) {
+      playBoing();
       return {
         type: "error",
         text: parsed.message,
@@ -299,13 +292,13 @@ export default function GitVisualizerPage() {
       };
     }
 
-    // Execute the command
     // @ts-ignore
     const result = executeCommand(parsed, gitState, {
       allowFastForwardMerges: settings.ALLOW_FAST_FORWARD_MERGES,
     });
 
     if (!result.success) {
+      playBoing();
       return {
         type: "error",
         text: result.message,
@@ -313,9 +306,26 @@ export default function GitVisualizerPage() {
       };
     }
 
+    // Sound feedback based on command intent
+    if (trimmed.startsWith("git commit")) {
+      playCommit();
+    } else if (
+      trimmed.startsWith("git branch") ||
+      trimmed.includes("checkout -b")
+    ) {
+      playBranch();
+    } else if (trimmed.startsWith("git merge")) {
+      playMerge();
+    } else if (trimmed.startsWith("git reset")) {
+      playBoing();
+    } else {
+      playPop();
+    }
+
     // Update git state if command succeeded
     if (result.newState) {
       setGitState(result.newState);
+      checkQuests(result.newState);
     }
 
     return {
@@ -356,7 +366,6 @@ export default function GitVisualizerPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [demoMode, settings.DEMO_STEP_ON_SPACE]);
 
-  // Type out a command character by character
   const typeCommand = async (command: string): Promise<void> => {
     return new Promise((resolve) => {
       let index = 0;
@@ -372,7 +381,6 @@ export default function GitVisualizerPage() {
     });
   };
 
-  // Execute demo sequence
   const runDemoCommand = async (
     commandIndex: number,
     demoCommands: string[],
@@ -382,7 +390,6 @@ export default function GitVisualizerPage() {
       return;
     }
 
-    // Apply initial delay before first command
     if (commandIndex === 0 && settings.INITIAL_DEMO_DELAY > 0) {
       await new Promise((resolve) =>
         setTimeout(resolve, settings.INITIAL_DEMO_DELAY),
@@ -392,36 +399,29 @@ export default function GitVisualizerPage() {
     const command = demoCommands[commandIndex];
 
     if (settings.DEMO_STEP_ON_SPACE) {
-      // First space: type the command
       await waitForSpace();
       if (!demoModeRef.current) return;
     }
 
-    // Type the command
     await typeCommand(command);
 
     if (settings.DEMO_STEP_ON_SPACE) {
-      // Second space: execute the command
       await waitForSpace();
       if (!demoModeRef.current) return;
     } else {
-      // Wait before executing
       await new Promise((resolve) =>
         setTimeout(resolve, graphConfig.COMMAND_DELAY),
       );
       if (!demoModeRef.current) return;
     }
 
-    // Execute the command
     terminalRef.current?.executeCurrentInput?.();
 
-    // Wait before next command
     demoTimeoutRef.current = setTimeout(() => {
       setDemoIndex(commandIndex + 1);
     }, graphConfig.ACTION_ANIMATION_DELAY);
   };
 
-  // Handle demo mode
   useEffect(() => {
     if (demoMode && currentDemoCommands.length > 0) {
       runDemoCommand(demoIndex, currentDemoCommands);
@@ -440,15 +440,13 @@ export default function GitVisualizerPage() {
 
     try {
       const parsed = JSON.parse(stored) as Partial<GraphSettings>;
-      // Reset to default: ALLOW_FAST_FORWARD_MERGES should be false by default
-      // This migrates old settings that may have had it set to true
       setSettings((prev) => ({
         ...prev,
         ...parsed,
         ALLOW_FAST_FORWARD_MERGES: false,
       }));
     } catch {
-      // Ignore invalid stored settings
+      // Ignore
     }
   }, []);
 
@@ -457,14 +455,15 @@ export default function GitVisualizerPage() {
   }, [settings]);
 
   const startDemo = () => {
-    const currentDemoCommands = DEMOS[selectedDemo as DemoType] || [];
-    if (!currentDemoCommands || currentDemoCommands.length === 0) return;
-    // Don't reset state - just start playing commands
+    playPop();
+    const cmds = DEMOS[selectedDemo as DemoType] || [];
+    if (!cmds || cmds.length === 0) return;
     setDemoIndex(0);
     setDemoMode(true);
   };
 
   const stopDemo = () => {
+    playPop();
     setDemoMode(false);
     if (demoTimeoutRef.current) {
       clearTimeout(demoTimeoutRef.current);
@@ -472,6 +471,7 @@ export default function GitVisualizerPage() {
   };
 
   const resetGit = () => {
+    playBoing();
     stopDemo();
     setGitState(createEmptyGitState());
     setDemoIndex(0);
@@ -479,202 +479,171 @@ export default function GitVisualizerPage() {
     terminalRef.current?.clearHistory?.();
   };
 
-  const toggleLayout = () => {
-    setIsStacked((prev) => !prev);
-  };
-
-  const toggleFullscreen = () => {
-    setIsFullscreen((prev) => !prev);
+  const applyGraphLayout = (layout: "presentation" | "compact") => {
+    playPop();
+    setGraphLayout(layout);
+    applyPreset(layout === "presentation" ? "presentation" : "speedy");
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-900 text-white overflow-hidden flex-col">
-      {/* Navigation Header */}
-      <div className="border-b border-slate-700 px-6 py-4 bg-slate-900 flex items-center justify-between">
-        <div className="flex flex-row flex-wrap gap-4 items-center">
-          <Link
-            href="/"
-            className="text-2xl font-bold hover:text-indigo-400 transition-colors"
-          >
-            gitshitt
-          </Link>
-          <div className="flex flex-col">
-            <a
-              href="https://www.youtube.com/@ZeqTech"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-indigo-400 hover:underline"
+    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+      <VisualizerHeader />
+
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2 md:p-3">
+        {newlyUnlockedQuest && (
+          <div className="flex shrink-0 items-center justify-between rounded-xl border-2 border-foreground bg-tertiary px-3 py-2 shadow-pop">
+            <div>
+              <p className="text-sm font-bold">
+                Goal complete: {newlyUnlockedQuest.title}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                +{newlyUnlockedQuest.xp} XP · {newlyUnlockedQuest.subtitle}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setNewlyUnlockedQuest(null)}
+              className="rounded-full border-2 border-foreground px-2.5 py-1 text-xs font-bold"
             >
-              Visit ZeqTech on YouTube
-            </a>
-            <a
-              href="https://www.youtube.com/watch?v=x0nLbmVImag&t=140s"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-green-400 hover:underline"
-            >
-              Watch Merge Explanation Video
-            </a>
+              Close
+            </button>
           </div>
-        </div>
-        <div className="flex gap-2 items-center">
-          <GroupedSelect
-            value={selectedDemo}
-            onChange={(value) => {
-              setSelectedDemo(value);
-              stopDemo();
-              resetGit();
-            }}
-            options={DEMO_OPTIONS}
-            className="min-w-[220px]"
-          />
-          {(DEMOS[selectedDemo as DemoType]?.length ?? 0) > 0 && (
-            // biome-ignore lint/complexity/noUselessFragments: <explanation>
-            <>
-              {!demoMode ? (
-                <button
-                  onClick={startDemo}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded text-sm font-medium transition-colors"
-                >
-                  ▶ Play Demo
-                </button>
-              ) : (
-                <button
-                  onClick={stopDemo}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm font-medium transition-colors"
-                >
-                  ⏹ Stop Demo
-                </button>
-              )}
-            </>
-          )}
-          <button
-            onClick={resetGit}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm font-medium transition-colors"
-          >
-            ↻ Reset
-          </button>
-          <button
-            onClick={toggleLayout}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm font-medium transition-colors"
-          >
-            ⇵ Toggle Layout
-          </button>
-          <button
-            onClick={toggleFullscreen}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm font-medium transition-colors"
-          >
-            {isFullscreen ? "◀ Exit Fullscreen" : "⛶ Fullscreen"}
-          </button>
-          <button
-            onClick={toggleSettings}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm font-medium transition-colors"
-          >
-            Settings
-          </button>
-        </div>
-      </div>
+        )}
 
-      {/* Main Content */}
-      <div
-        className={`flex flex-1 w-full h-full overflow-auto ${isStacked ? "flex-col-reverse" : "flex-row"}`}
-      >
-        {/* Left Panel - Terminal */}
-        <div
-          className={cn(
-            `${isStacked ? "w-full border-t max-h-[50%]" : "w-1/2 border-r"} border-slate-700 p-4 flex flex-col flex-1`,
-          )}
-        >
-          <TerminalComponent
-            ref={terminalRef}
-            onCommand={handleCommand}
-            placeholder="git commit -m 'your message'"
-            helpText="Try: git commit -m 'msg' | git branch | git checkout -b name | git switch -c name | git merge [--squash] name | git branch -d/-D name"
-            fontSize={settings.TERMINAL_FONT_SIZE}
-            refocusOnEnter={!settings.DEMO_STEP_ON_SPACE}
-          />
-        </div>
-
-        {/* Right Panel - Split between Graph and Details */}
-        <div
-          className={cn(
-            `${isStacked ? "w-full max-h-[50%]" : "w-1/2"} flex flex-col p-4 gap-4 flex-1`,
-          )}
-        >
-          {/* Git Graph */}
-          <div className="flex-1 min-h-0">
-            <GitGraphComponent
-              gitState={gitState}
-              onCommitClick={setSelectedCommitId}
-              config={graphConfig}
-              demoProgress={demoProgress}
-              reserveRightColumn={true}
-              followMainHead={true}
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+          <div className="w-44 sm:w-52">
+            <GroupedSelect
+              value={selectedDemo}
+              onChange={(value) => {
+                setSelectedDemo(value);
+                stopDemo();
+                resetGit();
+              }}
+              options={DEMO_OPTIONS}
+              className="w-full text-xs"
             />
           </div>
+          {(DEMOS[selectedDemo as DemoType]?.length ?? 0) > 0 &&
+            (!demoMode ? (
+              <SecondaryButton onClick={startDemo} className="px-3 py-1.5 text-xs">
+                Play demo
+              </SecondaryButton>
+            ) : (
+              <SecondaryButton onClick={stopDemo} className="px-3 py-1.5 text-xs">
+                Stop demo
+              </SecondaryButton>
+            ))}
+          <SecondaryButton onClick={resetGit} className="px-3 py-1.5 text-xs">
+            <RotateCcw size={14} />
+            Reset
+          </SecondaryButton>
+          <SecondaryButton onClick={toggleSettings} className="px-3 py-1.5 text-xs">
+            <Sliders size={14} />
+            Settings
+          </SecondaryButton>
+          <span className="ml-auto hidden text-xs font-semibold text-muted-foreground sm:inline">
+            Branch: {gitState.currentBranch}
+          </span>
+        </div>
+
+        <div
+          className={cn(
+            "grid min-h-0 flex-1 gap-2 pb-16 sm:pb-4",
+            isStacked ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2",
+          )}
+        >
+          <div className={cn("min-h-0", isStacked ? "h-1/2" : "h-full")}>
+            <TerminalComponent
+              ref={terminalRef}
+              onCommand={handleCommand}
+              placeholder="git status"
+              helpText="Type real git commands. Watch the graph update on the right."
+              fontSize={settings.TERMINAL_FONT_SIZE}
+              refocusOnEnter={!settings.DEMO_STEP_ON_SPACE}
+            />
+          </div>
+
+          <div className={cn("graph-sticker min-h-0", isStacked ? "h-1/2" : "h-full")}>
+            <div className="graph-sticker-header">
+              <span className="text-xs font-bold">Commit graph</span>
+              <div className="flex items-center gap-1">
+                <PillTab
+                  active={graphLayout === "presentation"}
+                  onClick={() => applyGraphLayout("presentation")}
+                  className="px-3 py-1"
+                >
+                  Presentation
+                </PillTab>
+                <PillTab
+                  active={graphLayout === "compact"}
+                  onClick={() => applyGraphLayout("compact")}
+                  className="px-3 py-1"
+                >
+                  Compact
+                </PillTab>
+              </div>
+            </div>
+            <div className="dot-grid min-h-0 flex-1">
+              <GitGraphComponent
+                gitState={gitState}
+                onCommitClick={setSelectedCommitId}
+                config={graphConfig}
+                demoProgress={demoProgress}
+                reserveRightColumn={true}
+                followMainHead={true}
+              />
+            </div>
+            <div className="flex flex-wrap gap-3 border-t-2 border-border px-3 py-1.5 text-xs font-bold">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-full bg-accent" /> main
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-full bg-secondary" /> feature
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-full bg-tertiary" /> HEAD
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Fullscreen Overlay */}
-      {isFullscreen && (
-        <div className="fixed inset-0 top-18.25  z-50 flex flex-col p-2 ">
-          <GitGraphComponent
-            gitState={gitState}
-            onCommitClick={setSelectedCommitId}
-            config={graphConfig}
-            demoProgress={demoProgress}
-            reserveRightColumn={true}
-            followMainHead={true}
-          />
-        </div>
-      )}
+      <ConceptIntuitionFab />
 
       {isSettingsOpen && (
-        <div className="fixed inset-0 z-60 bg-black/50">
-          <div className="absolute right-0 top-0 h-full w-90 bg-slate-900 border-l border-slate-700 flex flex-col">
-            {/* Sticky Header */}
-            <div className="sticky top-0 bg-slate-900 p-4 border-b border-slate-700 z-10">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Graph Settings</h2>
-                <button
-                  onClick={toggleSettings}
-                  className="px-2 py-1 text-slate-300 hover:text-white"
-                >
-                  X
-                </button>
-              </div>
+        <div className="fixed inset-0 z-50 flex justify-end bg-foreground/20">
+          <div className="flex h-full w-96 flex-col overflow-y-auto border-l-2 border-foreground bg-card p-6 shadow-pop-lg">
+            <div className="flex items-center justify-between border-b-2 border-border pb-4">
+              <h2 className="font-heading text-lg font-bold">Graph settings</h2>
+              <button
+                type="button"
+                onClick={toggleSettings}
+                className="rounded-full border-2 border-foreground px-3 py-1 text-xs font-bold"
+              >
+                Close
+              </button>
             </div>
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="mb-6">
-                <p className="text-sm text-slate-300 mb-2">Presets</p>
+            <div className="flex-1 space-y-6 py-4">
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-wider">Presets</p>
                 <div className="grid grid-cols-2 gap-2">
                   {SETTINGS_PRESETS.map((preset) => (
-                    <button
+                    <SecondaryButton
                       key={preset.key}
                       onClick={() => applyPreset(preset.key)}
-                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm font-medium transition-colors"
+                      className="w-full py-2 text-xs"
                     >
                       {preset.label}
-                    </button>
+                    </SecondaryButton>
                   ))}
                 </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    onClick={exportSettings}
-                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm font-medium transition-colors"
-                  >
-                    Export Settings
-                  </button>
-                  {exportStatus && (
-                    <span className="text-xs text-slate-400">
-                      {exportStatus}
-                    </span>
-                  )}
-                </div>
               </div>
+
               <div className="space-y-4">
+                <p className="text-xs font-bold uppercase tracking-wider">
+                  Dimensions & speeds
+                </p>
                 {sliderSettings.map((item) => {
                   const value =
                     (settings[item.key as keyof GraphSettings] as number) ??
@@ -682,10 +651,10 @@ export default function GitVisualizerPage() {
                       item.key as keyof GraphSettings
                     ] as number);
                   return (
-                    <div key={item.key}>
-                      <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="text-slate-300">{item.label}</span>
-                        <span className="text-slate-400">{value}</span>
+                    <div key={item.key} className="space-y-1">
+                      <div className="flex justify-between text-xs font-bold">
+                        <span>{item.label}</span>
+                        <span className="font-mono text-accent">{value}</span>
                       </div>
                       <input
                         type="range"
@@ -701,88 +670,16 @@ export default function GitVisualizerPage() {
                             ) as GraphSettings[keyof GraphSettings],
                           )
                         }
-                        className="w-full"
+                        className="w-full cursor-pointer accent-accent"
                       />
                     </div>
                   );
                 })}
               </div>
 
-              <div className="mt-6 space-y-3">
-                {/* <label className="flex items-center justify-between text-sm">
-                                    <span className="text-slate-300">Graph rotation</span>
-                                    <select
-                                        value={settings.GRAPH_ROTATION}
-                                        onChange={( e ) =>
-                                            updateSetting(
-                                                "GRAPH_ROTATION",
-                                                Number( e.target.value ) as 0 | 90 | 180 | 270,
-                                            )
-                                        }
-                                        className="bg-slate-800 text-white px-2 py-1 rounded text-sm"
-                                    >
-                                        <option value={0}>0°</option>
-                                        <option value={90}>90°</option>
-                                        <option value={180}>180°</option>
-                                        <option value={270}>270°</option>
-                                    </select>
-                                </label> */}
-                <label className="flex items-center justify-between text-sm">
-                  <span className="text-slate-300">Invert cubic curves</span>
-                  <input
-                    type="checkbox"
-                    checked={settings.INVERT_CUBIC_CURVES}
-                    onChange={(e) =>
-                      updateSetting("INVERT_CUBIC_CURVES", e.target.checked)
-                    }
-                  />
-                </label>
-                <label className="flex items-center justify-between text-sm">
-                  <span className="text-slate-300">Step demo on spacebar</span>
-                  <input
-                    type="checkbox"
-                    checked={settings.DEMO_STEP_ON_SPACE}
-                    onChange={(e) =>
-                      updateSetting("DEMO_STEP_ON_SPACE", e.target.checked)
-                    }
-                  />
-                </label>
-                <label className="flex items-center justify-between text-sm">
-                  <span className="text-slate-300">Show text labels</span>
-                  <input
-                    type="checkbox"
-                    checked={settings.SHOW_TEXT_LABELS}
-                    onChange={(e) =>
-                      updateSetting("SHOW_TEXT_LABELS", e.target.checked)
-                    }
-                  />
-                </label>
-                <label className="flex items-center justify-between text-sm">
-                  <span className="text-slate-300">Show merge type labels</span>
-                  <input
-                    type="checkbox"
-                    checked={settings.SHOW_MERGE_TYPE_LABELS}
-                    onChange={(e) =>
-                      updateSetting("SHOW_MERGE_TYPE_LABELS", e.target.checked)
-                    }
-                  />
-                </label>
-                <label className="flex items-center justify-between text-sm">
-                  <span className="text-slate-300">
-                    Allow fast-forward merges
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={settings.ALLOW_FAST_FORWARD_MERGES}
-                    onChange={(e) =>
-                      updateSetting(
-                        "ALLOW_FAST_FORWARD_MERGES",
-                        e.target.checked,
-                      )
-                    }
-                  />
-                </label>
-              </div>
+              <SecondaryButton onClick={exportSettings} className="w-full text-xs">
+                {exportStatus || "Copy settings JSON"}
+              </SecondaryButton>
             </div>
           </div>
         </div>

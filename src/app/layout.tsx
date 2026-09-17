@@ -1,24 +1,34 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-//@ts-ignore
+import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const outfit = Outfit({
+  variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["700", "800"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-body",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "gitshitt — Learn and Practice Git without losing your shit",
+  title: "gitshitt — Learn Git without losing your shit",
   description:
-    "An interactive visual playground for learning Git. Practice branching, merging, rebasing, and more in a safe sandbox — no repo will be harmed.",
+    "Practice Git in a safe sandbox. Type real commands, watch the graph update live, and unlock the full playground for ₹100.",
   icons: {
-    icon: "./icon.png",
+    icon: "/icon.png",
   },
 };
 
@@ -30,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} bg-background text-foreground antialiased`}
       >
         {children}
       </body>

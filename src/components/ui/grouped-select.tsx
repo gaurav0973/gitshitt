@@ -1,113 +1,93 @@
 "use client";
 
-// biome-ignore assist/source/organizeImports: <explanation>
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
 
-export interface GroupedSelectOption
-{
+export interface GroupedSelectOption {
   key: string;
   label: string;
   isGroupTitle?: boolean;
   isSeparator?: boolean;
 }
 
-interface GroupedSelectProps
-{
+interface GroupedSelectProps {
   value: string;
-  onChange: ( value: string ) => void;
+  onChange: (value: string) => void;
   options: GroupedSelectOption[];
   className?: string;
 }
 
-export function GroupedSelect( {
+export function GroupedSelect({
   value,
   onChange,
   options,
   className,
-}: GroupedSelectProps )
-{
-  const [isOpen, setIsOpen] = useState( false );
-  const containerRef = useRef<HTMLDivElement>( null );
+}: GroupedSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find(
-    ( opt ) => opt.key === value && !opt.isGroupTitle && !opt.isSeparator,
+    (opt) => opt.key === value && !opt.isGroupTitle && !opt.isSeparator,
   );
-  const displayLabel = selectedOption?.label || "Select...";
+  const displayLabel = selectedOption?.label || "Select Demo...";
 
-  useEffect( () =>
-  {
-    const handleClickOutside = ( event: MouseEvent ) =>
-    {
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
       if (
         containerRef.current &&
-        !containerRef.current.contains( event.target as Node )
+        !containerRef.current.contains(event.target as Node)
       ) {
-        setIsOpen( false );
+        setIsOpen(false);
       }
     };
 
-    if ( isOpen ) {
-      document.addEventListener( "mousedown", handleClickOutside );
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
       return () =>
-        document.removeEventListener( "mousedown", handleClickOutside );
+        document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [isOpen] );
+  }, [isOpen]);
 
-  const handleSelect = ( option: GroupedSelectOption ) =>
-  {
-    if ( option.isGroupTitle || option.isSeparator ) return;
-    onChange( option.key );
-    setIsOpen( false );
+  const handleSelect = (option: GroupedSelectOption) => {
+    if (option.isGroupTitle || option.isSeparator) return;
+    onChange(option.key);
+    setIsOpen(false);
   };
 
   return (
-    <div ref={containerRef} className={cn( "relative", className )}>
-      {/* Trigger Button */}
+    <div ref={containerRef} className={cn("relative", className)}>
       <button
         type="button"
-        onClick={() => setIsOpen( !isOpen )}
-        className="w-full px-3 py-2 bg-slate-800 text-white border border-slate-600 rounded text-sm font-medium transition-colors hover:border-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center justify-between"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between gap-2 rounded-full border-2 border-foreground bg-card px-3 py-1.5 text-xs font-bold text-foreground shadow-pop transition-colors hover:bg-muted focus:outline-none"
       >
-        <span>{displayLabel}</span>
-        <svg
+        <span className="truncate">{displayLabel}</span>
+        <ChevronDown
           className={cn(
-            "w-4 h-4 transition-transform",
-            isOpen && "transform rotate-180",
+            "size-3.5 shrink-0 text-muted-foreground transition-transform",
+            isOpen && "rotate-180",
           )}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <title>Toggle Dropdown</title>
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
+        />
       </button>
 
-      {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-100 w-full mt-1 bg-slate-800 border border-slate-600 rounded shadow-lg max-h-80 overflow-y-auto">
-          {options.map( ( option, index ) =>
-          {
-            if ( option.isSeparator ) {
+        <div className="absolute z-50 mt-2 max-h-72 w-full min-w-[200px] overflow-y-auto rounded-2xl border-2 border-foreground bg-card p-1.5 text-foreground shadow-pop-lg">
+          {options.map((option, index) => {
+            if (option.isSeparator) {
               return (
                 <div
-                  key={`${ option.key }-${ index }`}
-                  className="border-t border-slate-600 my-1"
+                  key={`${option.key}-${index}`}
+                  className="my-1.5 border-t-2 border-border"
                 />
               );
             }
 
-            if ( option.isGroupTitle ) {
+            if (option.isGroupTitle) {
               return (
                 <div
-                  key={`${ option.key }-${ index }`}
-                  className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-750"
+                  key={option.key}
+                  className="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-accent"
                 >
                   {option.label}
                 </div>
@@ -118,18 +98,23 @@ export function GroupedSelect( {
 
             return (
               <button
-                key={`${ option.key }-${ index }`}
+                key={option.key}
                 type="button"
-                onClick={() => handleSelect( option )}
+                onClick={() => handleSelect(option)}
                 className={cn(
-                  "w-full text-left px-4 py-2 text-sm transition-colors hover:bg-slate-700",
-                  isSelected && "bg-indigo-600 hover:bg-indigo-700 font-medium",
+                  "flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-xs font-semibold transition-colors",
+                  isSelected
+                    ? "bg-tertiary font-black text-foreground"
+                    : "text-foreground hover:bg-muted",
                 )}
               >
-                {option.label}
+                <span>{option.label}</span>
+                {isSelected && (
+                  <span className="text-xs font-bold text-accent">✓</span>
+                )}
               </button>
             );
-          } )}
+          })}
         </div>
       )}
     </div>
