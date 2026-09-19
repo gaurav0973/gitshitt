@@ -35,13 +35,12 @@ import {
 } from "@/lib/audioFx";
 import { VisualizerHeader } from "@/components/playful/nav";
 import { ConceptIntuitionFab } from "@/components/playful/concept-drawer";
-import { GitChatDrawer } from "@/components/GitChatDrawer";
 import { PillTab, SecondaryButton } from "@/components/playful/buttons";
 import { deepCloneGitState } from "@/lib/gitExecutor/deepCloneGitState";
 import { deserializeGitState, serializeGitState } from "@/lib/gitStateSerialize";
 import { useAppUser } from "@/hooks/useAppUser";
 import type { GitContext } from "@/lib/validators/chat";
-import { RotateCcw, Sliders, MessageCircle, Save, FolderOpen } from "lucide-react";
+import { RotateCcw, Sliders, Save, FolderOpen } from "lucide-react";
 import confetti from "canvas-confetti";
 
 const SETTINGS_STORAGE_KEY = "git-graph-settings";
@@ -63,7 +62,6 @@ export default function GitVisualizerPage() {
     null,
   );
   const [exportStatus, setExportStatus] = useState<string | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
   const [lastCommand, setLastCommand] = useState("");
   const [lastOutput, setLastOutput] = useState("");
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
@@ -663,19 +661,6 @@ export default function GitVisualizerPage() {
               </SecondaryButton>
             </>
           ) : null}
-          <SecondaryButton
-            onClick={() => {
-              if (!isSignedIn) {
-                window.location.href = "/sign-in";
-                return;
-              }
-              setChatOpen(true);
-            }}
-            className="px-3 py-1.5 text-xs"
-          >
-            <MessageCircle size={14} />
-            Chat
-          </SecondaryButton>
           <span className="ml-auto hidden text-xs font-semibold text-muted-foreground sm:inline">
             Branch: {gitState.currentBranch}
           </span>
@@ -746,12 +731,9 @@ export default function GitVisualizerPage() {
         </div>
       </div>
 
-      <ConceptIntuitionFab />
-
-      <GitChatDrawer
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
+      <ConceptIntuitionFab
         gitContext={gitContext}
+        isSignedIn={Boolean(isSignedIn)}
         chatLimit={user?.limits.chatDailyLimit}
         chatUsed={user?.limits.chatMessagesToday}
       />

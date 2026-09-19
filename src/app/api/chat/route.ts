@@ -5,11 +5,15 @@ import { conversations, messages } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/apiError";
 import { getChatUsageToday } from "@/lib/chatLimits";
-import { generateChatReply } from "@/lib/openai";
+import { streamChatReply } from "@/lib/openai";
 import { parseChatRequestBody } from "@/lib/validators/chat";
 
 function truncateTitle(message: string): string {
   return message.length > 40 ? `${message.slice(0, 40)}…` : message;
+}
+
+function encodeSse(payload: Record<string, unknown>): Uint8Array {
+  return new TextEncoder().encode(`data: ${JSON.stringify(payload)}\n\n`);
 }
 
 export async function POST(request: Request) {
@@ -74,34 +78,63 @@ export async function POST(request: Request) {
 
     chatHistory.push({ role: "user", content: parsed.message });
 
-    const reply = await generateChatReply(
-      parsed.mode,
-      chatHistory,
-      parsed.mode === "git" ? parsed.gitContext : undefined,
-    );
-
-    await db.insert(messages).values([
-      {
-        conversationId,
-        role: "user",
-        content: parsed.message,
-      },
-      {
-        conversationId,
-        role: "assistant",
-        content: reply,
-      },
-    ]);
-
-    await db
-      .update(conversations)
-      .set({ updatedAt: new Date() })
-      .where(eq(conversations.id, conversationId));
-
-    return NextResponse.json({
+    await db.insert(messages).values({
       conversationId,
-      reply,
-      role: "assistant",
+      role: "user",
+      content: parsed.message,
+    });
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        let fullReply = "";
+
+        try {
+          controller.enqueue(
+            encodeSse({ type: "conversation", conversationId }),
+          );
+
+          for await (const delta of streamChatReply(
+            parsed.mode,
+            chatHistory,
+            parsed.mode === "git" ? parsed.gitContext : undefined,
+          )) {
+            fullReply += delta;
+            controller.enqueue(encodeSse({ type: "delta", text: delta }));
+          }
+
+          const reply = fullReply.trim();
+          if (!reply) {
+            throw new Error("Empty response from OpenAI");
+          }
+
+          await db.insert(messages).values({
+            conversationId,
+            role: "assistant",
+            content: reply,
+          });
+
+          await db
+            .update(conversations)
+            .set({ updatedAt: new Date() })
+            .where(eq(conversations.id, conversationId));
+
+          controller.enqueue(encodeSse({ type: "done", reply }));
+          controller.close();
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Chat stream failed";
+          controller.enqueue(encodeSse({ type: "error", error: message }));
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+      },
     });
   } catch (error) {
     return handleApiError(error);

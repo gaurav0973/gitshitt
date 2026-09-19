@@ -58,7 +58,15 @@ export async function requireUser(): Promise<AppUser> {
     return existing;
   }
 
-  return createUser(userId);
+  try {
+    return await createUser(userId);
+  } catch (error) {
+    const raced = await fetchUserWithStats(userId);
+    if (raced) {
+      return raced;
+    }
+    throw error;
+  }
 }
 
 export async function requireProUser(): Promise<AppUser> {

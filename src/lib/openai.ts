@@ -4,8 +4,7 @@ import { GENERAL_ASSISTANT_PROMPT } from "@/lib/prompts/general";
 import type { ChatMode, GitContext } from "@/lib/validators/chat";
 
 function getOpenAIClient(): OpenAI {
-  const apiKey =
-    process.env.OPENAI_API_KEY ?? process.env.OPENA_AI_SECRET ?? "";
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured");
   }
@@ -17,33 +16,41 @@ export interface ChatMessage {
   content: string;
 }
 
-export async function generateChatReply(
+function buildChatInput(
   mode: ChatMode,
   history: ChatMessage[],
   gitContext?: GitContext,
-): Promise<string> {
+) {
   const systemPrompt =
     mode === "git"
       ? buildGitTutorSystemPrompt(gitContext)
       : GENERAL_ASSISTANT_PROMPT;
 
+  return [
+    { role: "system" as const, content: systemPrompt },
+    ...history.map((message) => ({
+      role: message.role,
+      content: message.content,
+    })),
+  ];
+}
+
+export async function* streamChatReply(
+  mode: ChatMode,
+  history: ChatMessage[],
+  gitContext?: GitContext,
+): AsyncGenerator<string> {
   const client = getOpenAIClient();
-  const response = await client.chat.completions.create({
+  const stream = await client.responses.create({
     model: "gpt-4o-mini",
-    messages: [
-      { role: "system", content: systemPrompt },
-      ...history.map((message) => ({
-        role: message.role,
-        content: message.content,
-      })),
-    ],
-    max_tokens: 600,
+    input: buildChatInput(mode, history, gitContext),
+    max_output_tokens: 600,
+    stream: true,
   });
 
-  const reply = response.choices[0]?.message?.content?.trim();
-  if (!reply) {
-    throw new Error("Empty response from OpenAI");
+  for await (const event of stream) {
+    if (event.type === "response.output_text.delta") {
+      yield event.delta;
+    }
   }
-
-  return reply;
 }
