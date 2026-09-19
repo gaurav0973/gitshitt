@@ -32,6 +32,7 @@
     "openai": "^7.18.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
     "standardwebhooks": "^1.1.1",
     "three": "^0.186.0"
   },

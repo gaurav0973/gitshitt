@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { ChatMarkdown } from "./chat-markdown";
 import { LightbulbIcon, ArrowRightIcon } from "./icons";
 import { PillTab } from "./buttons";
 import type { GitContext } from "@/lib/validators/chat";
@@ -246,12 +247,15 @@ function ConceptIntuitionDrawer({
                 message.role === "user" ? "ml-auto bg-muted" : "bg-card",
               )}
             >
-              {message.content ||
-                (loading && message.role === "assistant" ? (
+              {message.role === "assistant" ? (
+                message.content ? (
+                  <ChatMarkdown content={message.content} />
+                ) : loading ? (
                   <span className="text-muted-foreground">Thinking…</span>
-                ) : (
-                  ""
-                ))}
+                ) : null
+              ) : (
+                message.content
+              )}
             </div>
           ))}
           <div ref={messagesEndRef} />
