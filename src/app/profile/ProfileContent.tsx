@@ -223,17 +223,35 @@ export function ProfileContent() {
             </div>
           </section>
 
-          <section>
-            <h2 className="mb-2 font-heading text-lg font-extrabold">Chat usage</h2>
-            <p className="text-sm text-muted-foreground">
-              {user.limits.chatMessagesToday}/{user.limits.chatDailyLimit} messages used today
-            </p>
-            <Link
-              href="/git-visualizer"
-              className="mt-2 inline-block text-sm font-semibold text-accent"
-            >
-              Open chat in visualizer
-            </Link>
+          <section className="space-y-4">
+            <div>
+              <h2 className="mb-2 font-heading text-lg font-extrabold">Daily usage</h2>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  Chat: {user.limits.chatMessagesToday}/{user.limits.chatDailyLimit}{" "}
+                  messages today
+                </li>
+                <li>
+                  Git commands: {user.limits.commandsUsedToday}/
+                  {user.isPro ? "∞" : user.limits.commandDailyLimit} today
+                </li>
+                <li>
+                  Guided demos: {user.limits.demosUsedToday}/
+                  {user.isPro ? "∞" : user.limits.demoDailyLimit} today
+                </li>
+              </ul>
+              <Link
+                href="/git-visualizer"
+                className="mt-2 inline-block text-sm font-semibold text-accent"
+              >
+                Open visualizer
+              </Link>
+            </div>
+            {!user.isPro ? (
+              <PrimaryLink href="/payment" className="inline-flex px-5 py-2 text-sm">
+                Upgrade for unlimited access — ₹100
+              </PrimaryLink>
+            ) : null}
           </section>
         </div>
       </main>

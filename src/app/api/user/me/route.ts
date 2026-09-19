@@ -5,11 +5,13 @@ import { users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/apiError";
 import { getChatUsageToday } from "@/lib/chatLimits";
+import { getDailyUsageFromStats } from "@/lib/commandLimits";
 
 export async function GET() {
   try {
     const user = await requireUser();
     const chatUsage = await getChatUsageToday(user.id, user.isPro);
+    const dailyUsage = getDailyUsageFromStats(user.stats, user.isPro);
 
     return NextResponse.json({
       id: user.id,
@@ -24,6 +26,10 @@ export async function GET() {
       limits: {
         chatMessagesToday: chatUsage.used,
         chatDailyLimit: chatUsage.limit,
+        commandsUsedToday: dailyUsage.commandsUsedToday,
+        commandDailyLimit: dailyUsage.commandDailyLimit,
+        demosUsedToday: dailyUsage.demosUsedToday,
+        demoDailyLimit: dailyUsage.demoDailyLimit,
       },
     });
   } catch (error) {

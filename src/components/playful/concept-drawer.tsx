@@ -16,6 +16,7 @@ interface ConceptIntuitionFabProps {
   isSignedIn: boolean;
   chatLimit?: number;
   chatUsed?: number;
+  onChatSent?: () => void;
 }
 
 function ConceptIntuitionDrawer({
@@ -24,12 +25,14 @@ function ConceptIntuitionDrawer({
   gitContext,
   chatLimit,
   chatUsed,
+  onChatSent,
 }: {
   open: boolean;
   onClose: () => void;
   gitContext: GitContext;
   chatLimit?: number;
   chatUsed?: number;
+  onChatSent?: () => void;
 }) {
   const [mode, setMode] = useState<"git" | "general">("git");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -47,9 +50,14 @@ function ConceptIntuitionDrawer({
     return null;
   }
 
+  const atChatLimit =
+    chatLimit !== undefined &&
+    chatUsed !== undefined &&
+    chatUsed >= chatLimit;
+
   const sendMessage = async () => {
     const trimmed = input.trim();
-    if (!trimmed || loading) {
+    if (!trimmed || loading || atChatLimit) {
       return;
     }
 
@@ -168,6 +176,8 @@ function ConceptIntuitionDrawer({
           }
         }
       }
+
+      onChatSent?.();
     } catch (err) {
       setMessages((prev) => {
         const last = prev[prev.length - 1];
@@ -251,6 +261,11 @@ function ConceptIntuitionDrawer({
         </div>
 
         <div className="border-t-2 border-border p-4">
+          {atChatLimit ? (
+            <p className="mb-3 text-xs font-semibold text-red-600">
+              Daily chat limit reached. Upgrade to Pro for more messages.
+            </p>
+          ) : null}
           <div className="flex gap-2">
             <input
               value={input}
@@ -261,13 +276,18 @@ function ConceptIntuitionDrawer({
                   void sendMessage();
                 }
               }}
-              placeholder="Ask about what just happened…"
-              className="input-field flex-1 text-sm"
+              placeholder={
+                atChatLimit
+                  ? "Daily limit reached"
+                  : "Ask about what just happened…"
+              }
+              disabled={atChatLimit}
+              className="input-field flex-1 text-sm disabled:opacity-50"
             />
             <button
               type="button"
               onClick={() => void sendMessage()}
-              disabled={loading || !input.trim()}
+              disabled={loading || !input.trim() || atChatLimit}
               className="rounded-full border-2 border-foreground bg-accent px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
             >
               Send
@@ -284,6 +304,7 @@ export function ConceptIntuitionFab({
   isSignedIn,
   chatLimit,
   chatUsed,
+  onChatSent,
 }: ConceptIntuitionFabProps) {
   const [open, setOpen] = useState(false);
 
@@ -322,6 +343,7 @@ export function ConceptIntuitionFab({
         gitContext={gitContext}
         chatLimit={chatLimit}
         chatUsed={chatUsed}
+        onChatSent={onChatSent}
       />
     </>
   );

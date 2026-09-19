@@ -28,9 +28,6 @@ export const metadata: Metadata = {
   title: "gitshitt — Learn Git without losing your shit",
   description:
     "Practice Git in a safe sandbox. Type real commands, watch the graph update live, and unlock the full playground for ₹100.",
-  icons: {
-    icon: "/icon.png",
-  },
 };
 
 export default function RootLayout({

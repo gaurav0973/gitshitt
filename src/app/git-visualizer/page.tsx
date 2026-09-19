@@ -66,7 +66,7 @@ export default function GitVisualizerPage() {
   const [lastOutput, setLastOutput] = useState("");
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
 
-  const { user, isSignedIn } = useAppUser();
+  const { user, isSignedIn, refresh } = useAppUser();
   const sessionTrackedRef = useRef(false);
 
   const demoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -374,6 +374,35 @@ export default function GitVisualizerPage() {
   const handleCommand = async (command: string): Promise<TerminalOutput> => {
     const trimmed = command.trim();
     setLastCommand(trimmed);
+
+    const isDemoPlayback = demoModeRef.current;
+
+    if (!isSignedIn && !isDemoPlayback) {
+      playBoing();
+      const message = "Sign in to run git commands and track your progress.";
+      setLastOutput(message);
+      return {
+        type: "error",
+        text: message,
+        timestamp: Date.now(),
+      };
+    }
+
+    if (user && !user.isPro && !isDemoPlayback) {
+      const { commandsUsedToday, commandDailyLimit } = user.limits;
+      if (commandsUsedToday >= commandDailyLimit) {
+        playBoing();
+        const message =
+          "Daily git command limit reached. Upgrade to Pro for unlimited commands.";
+        setLastOutput(message);
+        return {
+          type: "error",
+          text: message,
+          timestamp: Date.now(),
+        };
+      }
+    }
+
     const parsed = parseGitCommand(trimmed);
 
     if ("error" in parsed && parsed.error) {
@@ -419,18 +448,28 @@ export default function GitVisualizerPage() {
 
     setLastOutput(result.message);
 
-    if (isSignedIn) {
-      void fetch("/api/user/stats/event", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "command" }),
-      });
-    }
-
     // Update git state if command succeeded
     if (result.newState) {
       setGitState(result.newState);
       checkQuests(result.newState);
+    }
+
+    if (isSignedIn && !isDemoPlayback) {
+      try {
+        const response = await fetch("/api/user/stats/event", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "command" }),
+        });
+        if (response.status === 429) {
+          setSessionStatus(
+            "Daily git command limit reached. Upgrade to Pro for unlimited commands.",
+          );
+        }
+        void refresh();
+      } catch {
+        // Non-blocking stats update
+      }
     }
 
     return {
@@ -559,10 +598,45 @@ export default function GitVisualizerPage() {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
   }, [settings]);
 
-  const startDemo = () => {
+  const startDemo = async () => {
     playPop();
     const cmds = DEMOS[selectedDemo as DemoType] || [];
     if (!cmds || cmds.length === 0) return;
+
+    if (!isSignedIn) {
+      setSessionStatus("Sign in to play guided demos.");
+      return;
+    }
+
+    if (user && !user.isPro) {
+      const { demosUsedToday, demoDailyLimit } = user.limits;
+      if (demosUsedToday >= demoDailyLimit) {
+        setSessionStatus(
+          "Daily demo limit reached. Upgrade to Pro for unlimited demos.",
+        );
+        return;
+      }
+    }
+
+    try {
+      const response = await fetch("/api/user/stats/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "demo" }),
+      });
+      if (response.status === 429) {
+        setSessionStatus(
+          "Daily demo limit reached. Upgrade to Pro for unlimited demos.",
+        );
+        return;
+      }
+      void refresh();
+    } catch {
+      setSessionStatus("Could not start demo. Try again.");
+      return;
+    }
+
+    setSessionStatus(null);
     setDemoIndex(0);
     setDemoMode(true);
   };
@@ -592,7 +666,77 @@ export default function GitVisualizerPage() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
-      <VisualizerHeader isPro={user?.isPro ?? false} />
+      <VisualizerHeader
+        isPro={user?.isPro ?? false}
+        isSignedIn={Boolean(isSignedIn)}
+        commandsUsedToday={user?.limits.commandsUsedToday}
+        commandDailyLimit={user?.limits.commandDailyLimit}
+        demosUsedToday={user?.limits.demosUsedToday}
+        demoDailyLimit={user?.limits.demoDailyLimit}
+        branchName={gitState.currentBranch}
+        statusMessage={sessionStatus}
+      >
+        <div className="w-32 shrink-0 sm:w-40 md:w-48">
+          <GroupedSelect
+            value={selectedDemo}
+            onChange={(value) => {
+              setSelectedDemo(value);
+              stopDemo();
+              resetGit();
+            }}
+            options={DEMO_OPTIONS}
+            className="w-full text-xs"
+          />
+        </div>
+        {(DEMOS[selectedDemo as DemoType]?.length ?? 0) > 0 &&
+          (!demoMode ? (
+            <SecondaryButton
+              onClick={startDemo}
+              className="shrink-0 px-2.5 py-1.5 text-xs sm:px-3"
+            >
+              Play demo
+            </SecondaryButton>
+          ) : (
+            <SecondaryButton
+              onClick={stopDemo}
+              className="shrink-0 px-2.5 py-1.5 text-xs sm:px-3"
+            >
+              Stop demo
+            </SecondaryButton>
+          ))}
+        <SecondaryButton
+          onClick={resetGit}
+          className="shrink-0 px-2.5 py-1.5 text-xs sm:px-3"
+        >
+          <RotateCcw size={14} />
+          <span className="hidden sm:inline">Reset</span>
+        </SecondaryButton>
+        <SecondaryButton
+          onClick={toggleSettings}
+          className="shrink-0 px-2.5 py-1.5 text-xs sm:px-3"
+        >
+          <Sliders size={14} />
+          <span className="hidden sm:inline">Settings</span>
+        </SecondaryButton>
+        {user?.isPro ? (
+          <>
+            <SecondaryButton
+              onClick={() => void saveSession()}
+              className="shrink-0 px-2.5 py-1.5 text-xs sm:px-3"
+            >
+              <Save size={14} />
+              <span className="hidden sm:inline">Save</span>
+            </SecondaryButton>
+            <SecondaryButton
+              onClick={() => void loadLatestSession()}
+              className="shrink-0 px-2.5 py-1.5 text-xs sm:px-3"
+            >
+              <FolderOpen size={14} />
+              <span className="hidden sm:inline">Load</span>
+            </SecondaryButton>
+          </>
+        ) : null}
+      </VisualizerHeader>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2 md:p-3">
         {newlyUnlockedQuest && (
@@ -614,60 +758,6 @@ export default function GitVisualizerPage() {
             </button>
           </div>
         )}
-
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-          <div className="w-44 sm:w-52">
-            <GroupedSelect
-              value={selectedDemo}
-              onChange={(value) => {
-                setSelectedDemo(value);
-                stopDemo();
-                resetGit();
-              }}
-              options={DEMO_OPTIONS}
-              className="w-full text-xs"
-            />
-          </div>
-          {(DEMOS[selectedDemo as DemoType]?.length ?? 0) > 0 &&
-            (!demoMode ? (
-              <SecondaryButton onClick={startDemo} className="px-3 py-1.5 text-xs">
-                Play demo
-              </SecondaryButton>
-            ) : (
-              <SecondaryButton onClick={stopDemo} className="px-3 py-1.5 text-xs">
-                Stop demo
-              </SecondaryButton>
-            ))}
-          <SecondaryButton onClick={resetGit} className="px-3 py-1.5 text-xs">
-            <RotateCcw size={14} />
-            Reset
-          </SecondaryButton>
-          <SecondaryButton onClick={toggleSettings} className="px-3 py-1.5 text-xs">
-            <Sliders size={14} />
-            Settings
-          </SecondaryButton>
-          {user?.isPro ? (
-            <>
-              <SecondaryButton onClick={() => void saveSession()} className="px-3 py-1.5 text-xs">
-                <Save size={14} />
-                Save
-              </SecondaryButton>
-              <SecondaryButton
-                onClick={() => void loadLatestSession()}
-                className="px-3 py-1.5 text-xs"
-              >
-                <FolderOpen size={14} />
-                Load
-              </SecondaryButton>
-            </>
-          ) : null}
-          <span className="ml-auto hidden text-xs font-semibold text-muted-foreground sm:inline">
-            Branch: {gitState.currentBranch}
-          </span>
-          {sessionStatus ? (
-            <span className="text-xs font-semibold text-accent">{sessionStatus}</span>
-          ) : null}
-        </div>
 
         <div
           className={cn(
@@ -736,6 +826,7 @@ export default function GitVisualizerPage() {
         isSignedIn={Boolean(isSignedIn)}
         chatLimit={user?.limits.chatDailyLimit}
         chatUsed={user?.limits.chatMessagesToday}
+        onChatSent={() => void refresh()}
       />
 
       {isSettingsOpen && (

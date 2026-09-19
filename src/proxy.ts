@@ -10,11 +10,15 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+  const { userId } = await auth();
+
+  if (userId && req.nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL("/git-visualizer", req.url));
+  }
+
   if (isPublicRoute(req)) {
     return;
   }
-
-  const { userId } = await auth();
   if (!userId && req.nextUrl.pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

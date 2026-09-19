@@ -16,6 +16,10 @@ export interface AppUserResponse {
   limits: {
     chatMessagesToday: number;
     chatDailyLimit: number;
+    commandsUsedToday: number;
+    commandDailyLimit: number;
+    demosUsedToday: number;
+    demoDailyLimit: number;
   };
 }
 

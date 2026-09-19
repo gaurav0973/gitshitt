@@ -26,6 +26,9 @@ export const userStats = pgTable("user_stats", {
     .references(() => users.id, { onDelete: "cascade" }),
   sessionCount: integer("session_count").notNull().default(0),
   commandCount: integer("command_count").notNull().default(0),
+  dailyCommandCount: integer("daily_command_count").notNull().default(0),
+  dailyDemoCount: integer("daily_demo_count").notNull().default(0),
+  usageResetDate: timestamp("usage_reset_date"),
   streakDays: integer("streak_days").notNull().default(0),
   lastActiveDate: timestamp("last_active_date"),
 });

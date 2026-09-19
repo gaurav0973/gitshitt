@@ -1,8 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
 import { PlayfulLogo } from "./logo";
 import { PrimaryLink, SecondaryLink } from "./buttons";
 
 export function HomeNav() {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  if (isLoaded && isSignedIn) {
+    return null;
+  }
+
   return (
     <header className="mx-auto grid w-full max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-5 md:px-6">
       <PlayfulLogo className="justify-self-start" />
@@ -36,41 +45,112 @@ export function HomeNav() {
   );
 }
 
-export function VisualizerHeader({ isPro = false }: { isPro?: boolean }) {
+interface VisualizerHeaderProps {
+  isPro?: boolean;
+  isSignedIn?: boolean;
+  commandsUsedToday?: number;
+  commandDailyLimit?: number;
+  demosUsedToday?: number;
+  demoDailyLimit?: number;
+  branchName?: string;
+  statusMessage?: string | null;
+  children?: React.ReactNode;
+}
+
+export function VisualizerHeader({
+  isPro = false,
+  isSignedIn = false,
+  commandsUsedToday,
+  commandDailyLimit,
+  demosUsedToday,
+  demoDailyLimit,
+  branchName,
+  statusMessage,
+  children,
+}: VisualizerHeaderProps) {
+  const planBadge = isPro
+    ? "Pro plan · unlimited"
+    : isSignedIn
+      ? `Free plan · ${commandsUsedToday ?? 0}/${commandDailyLimit ?? 5} cmds · ${demosUsedToday ?? 0}/${demoDailyLimit ?? 3} demos`
+      : "Guest · sign in to save progress";
+
   return (
-    <header className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-border bg-card px-4 py-3 md:px-6">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
-            <path
-              d="M19 12H5M11 6l-6 6 6 6"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
-            />
-          </svg>
-          Home
-        </Link>
-        <PlayfulLogo href="/git-visualizer" />
-      </div>
-      <div className="flex items-center gap-2 sm:gap-3">
-        <span className="rounded-full border-2 border-border bg-muted px-3 py-1 text-xs font-bold text-foreground">
-          {isPro ? "Pro plan · unlimited" : "Free plan · 3 demos"}
-        </span>
-        {!isPro ? (
-          <PrimaryLink href="/payment" className="px-4 py-2 text-sm">
-            Upgrade — ₹100
-          </PrimaryLink>
+    <header className="border-b-2 border-border bg-card px-4 py-2.5 md:px-6">
+      <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex shrink-0 items-center gap-2 md:gap-3">
+          {!isSignedIn ? (
+            <Link
+              href="/"
+              className="hidden items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground sm:inline-flex"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
+                <path
+                  d="M19 12H5M11 6l-6 6 6 6"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </svg>
+              Home
+            </Link>
+          ) : null}
+          <PlayfulLogo href="/git-visualizer" />
+        </div>
+
+        {children ? (
+          <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden">
+            {children}
+          </div>
         ) : (
-          <PrimaryLink href="/profile" className="px-4 py-2 text-sm">
-            Profile
-          </PrimaryLink>
+          <div className="min-w-0 flex-1" />
         )}
+
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {statusMessage ? (
+            <span className="hidden max-w-40 truncate text-xs font-semibold text-accent sm:inline">
+              {statusMessage}
+            </span>
+          ) : null}
+          {branchName ? (
+            <span className="hidden text-xs font-semibold whitespace-nowrap text-muted-foreground xl:inline">
+              Branch: {branchName}
+            </span>
+          ) : null}
+          <span className="hidden rounded-full border-2 border-border bg-muted px-3 py-1 text-xs font-bold text-foreground lg:inline">
+            {planBadge}
+          </span>
+          {isSignedIn ? (
+            <>
+              {!isPro ? (
+                <PrimaryLink href="/payment" className="px-4 py-2 text-sm">
+                  Upgrade — ₹100
+                </PrimaryLink>
+              ) : null}
+              <SecondaryLink
+                href="/profile"
+                showArrow={false}
+                className="px-4 py-2 text-sm"
+              >
+                Profile
+              </SecondaryLink>
+            </>
+          ) : (
+            <>
+              <SecondaryLink
+                href="/sign-in"
+                showArrow={false}
+                className="px-4 py-2 text-sm"
+              >
+                Log in
+              </SecondaryLink>
+              <PrimaryLink href="/sign-in" className="px-4 py-2 text-sm">
+                Sign up free
+              </PrimaryLink>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
@@ -96,7 +176,7 @@ export function ProfileHeader({ isPro = false }: { isPro?: boolean }) {
           </svg>
           Back to visualizer
         </Link>
-        <PlayfulLogo href="/" />
+        <PlayfulLogo href="/git-visualizer" />
       </div>
       <span className="rounded-full border-2 border-border bg-muted px-3 py-1 text-xs font-bold text-foreground">
         {isPro ? "Pro profile" : "Your profile"}

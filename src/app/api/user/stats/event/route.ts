@@ -8,11 +8,18 @@ export async function POST(request: Request) {
     const user = await requireUser();
     const body = (await request.json()) as { type?: unknown };
 
-    if (body.type !== "command" && body.type !== "session") {
-      throw new ApiError(400, 'type must be "command" or "session"');
+    if (
+      body.type !== "command" &&
+      body.type !== "session" &&
+      body.type !== "demo"
+    ) {
+      throw new ApiError(
+        400,
+        'type must be "command", "session", or "demo"',
+      );
     }
 
-    await recordStatsEvent(user.id, body.type);
+    await recordStatsEvent(user.id, body.type, user.isPro);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
