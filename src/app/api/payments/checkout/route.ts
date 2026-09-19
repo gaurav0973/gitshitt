@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAppUrl } from "@/lib/appUrl";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/apiError";
 import { createProCheckout } from "@/lib/dodo";
@@ -11,12 +12,11 @@ export async function POST() {
       return NextResponse.json({ error: "Already Pro" }, { status: 400 });
     }
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const { checkoutUrl, sessionId } = await createProCheckout({
       userId: user.id,
       email: user.email,
       name: user.name,
-      returnUrl: `${origin}/payment/success`,
+      returnUrl: `${getAppUrl()}/payment/success`,
     });
 
     return NextResponse.json({ checkoutUrl, sessionId });

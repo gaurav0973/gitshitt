@@ -7,10 +7,19 @@
   return key;
 }
 
+function isDodoLiveMode(): boolean {
+  const env = process.env.DODO_ENVIRONMENT ?? process.env.DODO_PAYMENTS_ENVIRONMENT;
+  return env === "live" || env === "live_mode";
+}
+
 function getDodoBaseUrl(): string {
-  return process.env.DODO_ENVIRONMENT === "live"
+  return isDodoLiveMode()
     ? "https://live.dodopayments.com"
     : "https://test.dodopayments.com";
+}
+
+export function getDodoEnvironment(): "test_mode" | "live_mode" {
+  return isDodoLiveMode() ? "live_mode" : "test_mode";
 }
 
 interface CreateProCheckoutParams {
