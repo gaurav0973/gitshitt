@@ -36,7 +36,7 @@ export function HomeNav() {
   );
 }
 
-export function VisualizerHeader() {
+export function VisualizerHeader({ isPro = false }: { isPro?: boolean }) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-border bg-card px-4 py-3 md:px-6">
       <div className="flex items-center gap-3">
@@ -60,17 +60,23 @@ export function VisualizerHeader() {
       </div>
       <div className="flex items-center gap-2 sm:gap-3">
         <span className="rounded-full border-2 border-border bg-muted px-3 py-1 text-xs font-bold text-foreground">
-          Free plan · 3 demos
+          {isPro ? "Pro plan · unlimited" : "Free plan · 3 demos"}
         </span>
-        <PrimaryLink href="/payment" className="px-4 py-2 text-sm">
-          Upgrade — ₹100
-        </PrimaryLink>
+        {!isPro ? (
+          <PrimaryLink href="/payment" className="px-4 py-2 text-sm">
+            Upgrade — ₹100
+          </PrimaryLink>
+        ) : (
+          <PrimaryLink href="/profile" className="px-4 py-2 text-sm">
+            Profile
+          </PrimaryLink>
+        )}
       </div>
     </header>
   );
 }
 
-export function ProfileHeader() {
+export function ProfileHeader({ isPro = false }: { isPro?: boolean }) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-border bg-card px-4 py-3 md:px-6">
       <div className="flex items-center gap-3">
@@ -93,7 +99,7 @@ export function ProfileHeader() {
         <PlayfulLogo href="/" />
       </div>
       <span className="rounded-full border-2 border-border bg-muted px-3 py-1 text-xs font-bold text-foreground">
-        Your profile
+        {isPro ? "Pro profile" : "Your profile"}
       </span>
     </header>
   );

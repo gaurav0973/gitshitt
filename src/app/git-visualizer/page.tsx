@@ -35,8 +35,13 @@ import {
 } from "@/lib/audioFx";
 import { VisualizerHeader } from "@/components/playful/nav";
 import { ConceptIntuitionFab } from "@/components/playful/concept-drawer";
+import { GitChatDrawer } from "@/components/GitChatDrawer";
 import { PillTab, SecondaryButton } from "@/components/playful/buttons";
-import { RotateCcw, Sliders } from "lucide-react";
+import { deepCloneGitState } from "@/lib/gitExecutor/deepCloneGitState";
+import { deserializeGitState, serializeGitState } from "@/lib/gitStateSerialize";
+import { useAppUser } from "@/hooks/useAppUser";
+import type { GitContext } from "@/lib/validators/chat";
+import { RotateCcw, Sliders, MessageCircle, Save, FolderOpen } from "lucide-react";
 import confetti from "canvas-confetti";
 
 const SETTINGS_STORAGE_KEY = "git-graph-settings";
@@ -58,6 +63,13 @@ export default function GitVisualizerPage() {
     null,
   );
   const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [lastCommand, setLastCommand] = useState("");
+  const [lastOutput, setLastOutput] = useState("");
+  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
+
+  const { user, isSignedIn } = useAppUser();
+  const sessionTrackedRef = useRef(false);
 
   const demoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const demoModeRef = useRef(demoMode);
@@ -120,6 +132,88 @@ export default function GitVisualizerPage() {
   useEffect(() => {
     setCompletedQuestIds(getCompletedQuestIds());
   }, []);
+
+  useEffect(() => {
+    if (!isSignedIn || sessionTrackedRef.current) {
+      return;
+    }
+    sessionTrackedRef.current = true;
+    void fetch("/api/user/stats/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "session" }),
+    });
+  }, [isSignedIn]);
+
+  const gitContext: GitContext = useMemo(
+    () => ({
+      currentBranch: gitState.currentBranch,
+      commitCount: gitState.commits.size,
+      lastCommand: lastCommand || undefined,
+      lastOutput: lastOutput || undefined,
+      branches: Array.from(gitState.branches.keys()),
+    }),
+    [gitState, lastCommand, lastOutput],
+  );
+
+  const saveSession = async () => {
+    if (!user?.isPro) {
+      setSessionStatus("Pro required to save sessions");
+      return;
+    }
+
+    const name = window.prompt("Name this session");
+    if (!name?.trim()) {
+      return;
+    }
+
+    const response = await fetch("/api/sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: name.trim(),
+        gitState: serializeGitState(deepCloneGitState(gitState)),
+      }),
+    });
+
+    if (response.ok) {
+      setSessionStatus("Session saved");
+    } else {
+      setSessionStatus("Could not save session");
+    }
+  };
+
+  const loadLatestSession = async () => {
+    if (!user?.isPro) {
+      setSessionStatus("Pro required to load sessions");
+      return;
+    }
+
+    const listResponse = await fetch("/api/sessions");
+    const listData = (await listResponse.json()) as {
+      sessions?: Array<{ id: string; name: string }>;
+    };
+
+    const latest = listData.sessions?.[0];
+    if (!latest) {
+      setSessionStatus("No saved sessions yet");
+      return;
+    }
+
+    const detailResponse = await fetch(`/api/sessions/${latest.id}`);
+    const detailData = (await detailResponse.json()) as {
+      session?: { gitState: unknown; name: string };
+    };
+
+    if (!detailResponse.ok || !detailData.session) {
+      setSessionStatus("Could not load session");
+      return;
+    }
+
+    setGitState(deserializeGitState(detailData.session.gitState));
+    setSessionStatus(`Loaded "${detailData.session.name}"`);
+    terminalRef.current?.clearHistory?.();
+  };
 
   const checkQuests = useCallback((newState: GitState) => {
     const currentDone = getCompletedQuestIds();
@@ -281,10 +375,12 @@ export default function GitVisualizerPage() {
 
   const handleCommand = async (command: string): Promise<TerminalOutput> => {
     const trimmed = command.trim();
+    setLastCommand(trimmed);
     const parsed = parseGitCommand(trimmed);
 
     if ("error" in parsed && parsed.error) {
       playBoing();
+      setLastOutput(parsed.message);
       return {
         type: "error",
         text: parsed.message,
@@ -299,6 +395,7 @@ export default function GitVisualizerPage() {
 
     if (!result.success) {
       playBoing();
+      setLastOutput(result.message);
       return {
         type: "error",
         text: result.message,
@@ -320,6 +417,16 @@ export default function GitVisualizerPage() {
       playBoing();
     } else {
       playPop();
+    }
+
+    setLastOutput(result.message);
+
+    if (isSignedIn) {
+      void fetch("/api/user/stats/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "command" }),
+      });
     }
 
     // Update git state if command succeeded
@@ -487,7 +594,7 @@ export default function GitVisualizerPage() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
-      <VisualizerHeader />
+      <VisualizerHeader isPro={user?.isPro ?? false} />
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2 md:p-3">
         {newlyUnlockedQuest && (
@@ -541,9 +648,40 @@ export default function GitVisualizerPage() {
             <Sliders size={14} />
             Settings
           </SecondaryButton>
+          {user?.isPro ? (
+            <>
+              <SecondaryButton onClick={() => void saveSession()} className="px-3 py-1.5 text-xs">
+                <Save size={14} />
+                Save
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={() => void loadLatestSession()}
+                className="px-3 py-1.5 text-xs"
+              >
+                <FolderOpen size={14} />
+                Load
+              </SecondaryButton>
+            </>
+          ) : null}
+          <SecondaryButton
+            onClick={() => {
+              if (!isSignedIn) {
+                window.location.href = "/sign-in";
+                return;
+              }
+              setChatOpen(true);
+            }}
+            className="px-3 py-1.5 text-xs"
+          >
+            <MessageCircle size={14} />
+            Chat
+          </SecondaryButton>
           <span className="ml-auto hidden text-xs font-semibold text-muted-foreground sm:inline">
             Branch: {gitState.currentBranch}
           </span>
+          {sessionStatus ? (
+            <span className="text-xs font-semibold text-accent">{sessionStatus}</span>
+          ) : null}
         </div>
 
         <div
@@ -609,6 +747,14 @@ export default function GitVisualizerPage() {
       </div>
 
       <ConceptIntuitionFab />
+
+      <GitChatDrawer
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        gitContext={gitContext}
+        chatLimit={user?.limits.chatDailyLimit}
+        chatUsed={user?.limits.chatMessagesToday}
+      />
 
       {isSettingsOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-foreground/20">

@@ -5,10 +5,16 @@ import {
   DotGrid,
   Eyebrow,
 } from "@/components/playful/decor";
-import { PrimaryLink } from "@/components/playful/buttons";
 import { BadgeStar, StickerCard } from "@/components/playful/card";
 import { SimpleBackNav } from "@/components/playful/nav";
-import { BoltIcon, CheckIcon, LockIcon, MinusCircleIcon, ShieldIcon } from "@/components/playful/icons";
+import {
+  BoltIcon,
+  CheckIcon,
+  LockIcon,
+  MinusCircleIcon,
+  ShieldIcon,
+} from "@/components/playful/icons";
+import { PaymentCheckoutButton } from "@/components/PaymentCheckoutButton";
 
 const PRO_FEATURES = [
   "Every Git command, no limits",
@@ -55,13 +61,11 @@ export default function PaymentPage() {
             ))}
           </ul>
 
-          <PrimaryLink href="/profile" className="mt-8 w-full justify-center">
-            Pay ₹100 securely
-          </PrimaryLink>
+          <PaymentCheckoutButton />
 
           <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <LockIcon />
-            Powered by Razorpay · secure checkout
+            Powered by Dodo Payments · secure checkout
           </p>
         </StickerCard>
 
