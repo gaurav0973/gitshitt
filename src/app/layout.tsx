@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const outfit = Outfit({
   variable: "--font-heading",
@@ -40,6 +42,8 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} bg-background text-foreground antialiased`}
       >
+        <SpeedInsights />
+        <Analytics />
         <ClerkProvider>
         {children}
         </ClerkProvider>
