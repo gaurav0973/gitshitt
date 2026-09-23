@@ -73,7 +73,9 @@ export default function HomePage() {
                 where nothing can break.
               </p>
               <div className="flex flex-wrap gap-3">
-                <PrimaryLink href="/git-visualizer">Start practicing</PrimaryLink>
+                <PrimaryLink href="/git-visualizer">
+                  Start practicing
+                </PrimaryLink>
                 <SecondaryLink href="/git-visualizer" showArrow={false}>
                   See how it works
                 </SecondaryLink>
@@ -142,7 +144,7 @@ export default function HomePage() {
           <div className="relative mx-auto max-w-4xl text-center">
             <Eyebrow className="mx-auto">Pricing</Eyebrow>
             <h2 className="mt-4 font-heading text-3xl font-extrabold sm:text-4xl">
-              Free to start. ₹100 to unlock it all.
+              Free to start. ₹149 to unlock it all.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
               Practice for free with demos and core commands. Pay once to unlock
@@ -175,12 +177,15 @@ export default function HomePage() {
                 </PrimaryLink>
               </StickerCard>
 
-              <StickerCard featured className="relative flex h-full flex-col p-6 text-left">
+              <StickerCard
+                featured
+                className="relative flex h-full flex-col p-6 text-left"
+              >
                 <BadgeStar>UNLOCK ALL</BadgeStar>
                 <p className="font-heading text-2xl font-extrabold">Pro</p>
                 <p className="mt-1 text-sm text-muted-foreground">one-time</p>
                 <p className="mt-4 font-heading text-4xl font-extrabold">
-                  ₹100
+                  ₹149
                 </p>
                 <ul className="mt-6 space-y-2">
                   {PRO_FEATURES.map((item) => (
@@ -195,7 +200,10 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <PrimaryLink href="/payment" className="mt-auto w-full justify-center pt-8">
+                <PrimaryLink
+                  href="/payment"
+                  className="mt-auto w-full justify-center pt-8"
+                >
                   Unlock full access
                 </PrimaryLink>
               </StickerCard>

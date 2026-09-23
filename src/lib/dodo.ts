@@ -1,14 +1,21 @@
-﻿function getDodoApiKey(): string {
+﻿import { ApiError } from "@/lib/apiError";
+
+function getDodoApiKey(): string {
   const key =
     process.env.DODO_PAYMENTS_API_KEY ?? process.env.DODO_PAYMENT ?? "";
   if (!key) {
-    throw new Error("DODO_PAYMENTS_API_KEY is not configured");
+    throw new ApiError(
+      500,
+      "DODO_PAYMENTS_API_KEY is not configured",
+      "DODO_CONFIG",
+    );
   }
   return key;
 }
 
 function isDodoLiveMode(): boolean {
-  const env = process.env.DODO_ENVIRONMENT ?? process.env.DODO_PAYMENTS_ENVIRONMENT;
+  const env =
+    process.env.DODO_ENVIRONMENT ?? process.env.DODO_PAYMENTS_ENVIRONMENT;
   return env === "live" || env === "live_mode";
 }
 
@@ -40,10 +47,17 @@ export async function createProCheckout({
   email,
   name,
   returnUrl,
-}: CreateProCheckoutParams): Promise<{ checkoutUrl: string; sessionId: string }> {
+}: CreateProCheckoutParams): Promise<{
+  checkoutUrl: string;
+  sessionId: string;
+}> {
   const productId = process.env.DODO_PRO_PRODUCT_ID;
   if (!productId) {
-    throw new Error("DODO_PRO_PRODUCT_ID is not configured");
+    throw new ApiError(
+      500,
+      "DODO_PRO_PRODUCT_ID is not configured",
+      "DODO_CONFIG",
+    );
   }
 
   const response = await fetch(`${getDodoBaseUrl()}/checkouts`, {
@@ -68,7 +82,21 @@ export async function createProCheckout({
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Dodo checkout failed: ${errorText}`);
+    console.error(
+      `Dodo checkout failed (${getDodoEnvironment()}, HTTP ${response.status}): ${errorText}`,
+    );
+    if (response.status === 401) {
+      throw new ApiError(
+        502,
+        `Payment provider rejected the API key. Check that DODO_ENVIRONMENT (currently "${getDodoEnvironment()}") matches the mode of DODO_PAYMENTS_API_KEY.`,
+        "DODO_AUTH",
+      );
+    }
+    throw new ApiError(
+      502,
+      "Could not start checkout. Please try again.",
+      "DODO_CHECKOUT",
+    );
   }
 
   const data = (await response.json()) as DodoCheckoutResponse;

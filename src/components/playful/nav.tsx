@@ -125,7 +125,7 @@ export function VisualizerHeader({
             <>
               {!isPro ? (
                 <PrimaryLink href="/payment" className="px-4 py-2 text-sm">
-                  Upgrade — ₹100
+                  Upgrade — ₹149
                 </PrimaryLink>
               ) : null}
               <SecondaryLink

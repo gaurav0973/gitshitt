@@ -27,7 +27,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "gitshitt — Learn Git without losing your shit",
   description:
-    "Practice Git in a safe sandbox. Type real commands, watch the graph update live, and unlock the full playground for ₹100.",
+    "Practice Git in a safe sandbox. Type real commands, watch the graph update live, and unlock the full playground for ₹149.",
 };
 
 export default function RootLayout({

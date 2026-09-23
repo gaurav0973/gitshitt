@@ -37,7 +37,7 @@ export function PaymentCheckoutButton() {
         disabled={loading}
         className="mt-8 w-full justify-center"
       >
-        {loading ? "Starting checkout…" : "Pay ₹100 securely"}
+        {loading ? "Starting checkout…" : "Pay ₹149 securely"}
       </PrimaryButton>
       {error ? (
         <p className="mt-3 text-center text-xs font-semibold text-red-600">

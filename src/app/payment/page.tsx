@@ -47,7 +47,7 @@ export default function PaymentPage() {
         <StickerCard featured className="relative mx-auto mt-10 max-w-md p-6">
           <BadgeStar>ONE-TIME</BadgeStar>
           <p className="font-heading text-4xl font-extrabold">
-            ₹100 <span className="text-lg font-bold text-muted-foreground">/ forever</span>
+            ₹149 <span className="text-lg font-bold text-muted-foreground">/ forever</span>
           </p>
 
           <ul className="mt-6 space-y-3">

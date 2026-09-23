@@ -215,7 +215,7 @@ export function ProfileContent() {
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/75 backdrop-blur-[1px]">
                     <LockIcon className="text-foreground" size={22} />
                     <PrimaryLink href="/payment" className="px-5 py-2 text-sm">
-                      Upgrade — ₹100
+                      Upgrade — ₹149
                     </PrimaryLink>
                   </div>
                 </>
@@ -249,7 +249,7 @@ export function ProfileContent() {
             </div>
             {!user.isPro ? (
               <PrimaryLink href="/payment" className="inline-flex px-5 py-2 text-sm">
-                Upgrade for unlimited access — ₹100
+                Upgrade for unlimited access — ₹149
               </PrimaryLink>
             ) : null}
           </section>
