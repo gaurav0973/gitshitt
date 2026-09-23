@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { PlayfulLogo } from "./logo";
 import { PrimaryLink, SecondaryLink } from "./buttons";
 
@@ -128,13 +128,7 @@ export function VisualizerHeader({
                   Upgrade — ₹149
                 </PrimaryLink>
               ) : null}
-              <SecondaryLink
-                href="/profile"
-                showArrow={false}
-                className="px-4 py-2 text-sm"
-              >
-                Profile
-              </SecondaryLink>
+              <ProfileAvatarLink />
             </>
           ) : (
             <>
@@ -153,6 +147,32 @@ export function VisualizerHeader({
         </div>
       </div>
     </header>
+  );
+}
+
+function ProfileAvatarLink() {
+  const { user } = useUser();
+  const name = user?.fullName ?? user?.username ?? "Profile";
+
+  return (
+    <Link
+      href="/profile"
+      aria-label="Open your profile"
+      title={name}
+      className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-muted text-sm font-bold text-foreground transition-transform hover:-translate-y-0.5"
+    >
+      {user?.imageUrl ? (
+        // biome-ignore lint/performance/noImgElement: Clerk avatar is a remote URL; plain img avoids next/image remote config
+        <img
+          src={user.imageUrl}
+          alt={name}
+          className="size-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        name.charAt(0).toUpperCase()
+      )}
+    </Link>
   );
 }
 
