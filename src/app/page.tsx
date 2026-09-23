@@ -76,7 +76,7 @@ export default function HomePage() {
                 <PrimaryLink href="/git-visualizer">
                   Start practicing
                 </PrimaryLink>
-                <SecondaryLink href="/git-visualizer" showArrow={false}>
+                <SecondaryLink href="#demo" showArrow={false}>
                   See how it works
                 </SecondaryLink>
               </div>
@@ -91,6 +91,31 @@ export default function HomePage() {
               <HeroTerminalMock className="relative z-10 w-full" />
             </div>
           </div>
+        </section>
+
+        <section
+          id="demo"
+          className="relative mx-auto max-w-5xl scroll-mt-20 px-4 pb-16 md:px-6"
+        >
+          <div className="mx-auto mb-8 max-w-2xl text-center">
+            <Eyebrow className="mx-auto">See it in action</Eyebrow>
+            <h2 className="mt-4 font-heading text-3xl font-extrabold sm:text-4xl">
+              Type a command, watch Git happen
+            </h2>
+          </div>
+          <StickerCard className="overflow-hidden p-0">
+            <video
+              src="/video.mp4"
+              className="block h-auto max-h-[80vh] w-full bg-muted object-contain"
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls
+              preload="metadata"
+              aria-label="Demo of gitshitt: running git commands in the terminal and watching the commit graph update"
+            />
+          </StickerCard>
         </section>
 
         <DotGrid className="relative px-4 py-16 md:px-6">
