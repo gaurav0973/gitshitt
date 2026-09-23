@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
   "/",
-  "/git-visualizer",
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks(.*)",

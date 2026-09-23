@@ -51,8 +51,8 @@ export default function SignInPage() {
 
           <p className="mt-5 text-center text-sm text-muted-foreground">
             New here?{" "}
-            <Link href="/git-visualizer" className="font-bold text-accent">
-              Start practicing free
+            <Link href="/" className="font-bold text-accent">
+              See what gitshitt can do
             </Link>
           </p>
 
