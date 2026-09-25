@@ -70,7 +70,6 @@ export async function createProCheckout({
       product_cart: [{ product_id: productId, quantity: 1 }],
       billing_currency: "INR",
       billing_address: { country: "IN" },
-      allowed_payment_method_types: ["upi_collect", "credit", "debit"],
       customer: {
         email,
         name: name ?? email.split("@")[0],
