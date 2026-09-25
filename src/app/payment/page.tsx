@@ -25,7 +25,7 @@ const PRO_FEATURES = [
 
 export default function PaymentPage() {
   return (
-    <DotGrid className="relative min-h-screen px-4 py-10 md:px-6">
+    <DotGrid className="relative min-h-screen overflow-hidden px-4 py-10 md:px-6">
       <DecorativeCircle color="quaternary" className="-left-16 top-10" size={220} />
       <DecorativeCircle color="secondary" className="-right-12 bottom-10" size={260} />
       <ConfettiDecor />

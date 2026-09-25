@@ -16,7 +16,7 @@ export function generateStaticParams() {
 
 export default function SignInPage() {
   return (
-    <DotGrid className="relative flex min-h-screen flex-col items-center justify-center px-4 py-10">
+    <DotGrid className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-10">
       <DecorativeCircle
         color="tertiary"
         className="-right-10 top-8 opacity-80"

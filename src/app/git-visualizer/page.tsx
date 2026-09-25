@@ -761,8 +761,8 @@ export default function GitVisualizerPage() {
 
         <div
           className={cn(
-            "grid min-h-0 flex-1 gap-2 pb-16 sm:pb-4",
-            isStacked ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2",
+            "grid min-h-0 flex-1 grid-rows-2 gap-2 pb-16 sm:pb-4",
+            isStacked ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2 lg:grid-rows-1",
           )}
         >
           <div className={cn("min-h-0", isStacked ? "h-1/2" : "h-full")}>
@@ -831,7 +831,7 @@ export default function GitVisualizerPage() {
 
       {isSettingsOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-foreground/20">
-          <div className="flex h-full w-96 flex-col overflow-y-auto border-l-2 border-foreground bg-card p-6 shadow-pop-lg">
+          <div className="flex h-full w-full max-w-sm flex-col overflow-y-auto border-l-2 border-foreground bg-card p-6 shadow-pop-lg">
             <div className="flex items-center justify-between border-b-2 border-border pb-4">
               <h2 className="font-heading text-lg font-bold">Graph settings</h2>
               <button
